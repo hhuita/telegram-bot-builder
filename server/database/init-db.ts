@@ -243,6 +243,7 @@ export async function initializeDatabaseTables() {
         tags TEXT[] DEFAULT '{}',
         is_public INTEGER DEFAULT 0,
         usage_count INTEGER DEFAULT 0,
+        telegram_file_id TEXT,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
@@ -648,6 +649,27 @@ export async function initializeDatabaseTables() {
       `, "Миграция: добавление PK user_id + project_id + token_id");
     } catch (error) {
       console.log('⚠️ Ошибка при миграции token_id в bot_users:', error);
+    }
+
+    // Миграция: добавление telegram_file_id в media_files если его нет
+    try {
+      const columnCheck = await db.execute(sql`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'media_files'
+        AND column_name = 'telegram_file_id';
+      `);
+
+      if (columnCheck.rows.length === 0) {
+        console.log('🔄 Добавляем колонку telegram_file_id в таблицу media_files...');
+        await executeWithRetry(db, sql`
+          ALTER TABLE media_files
+          ADD COLUMN telegram_file_id TEXT;
+        `, "Миграция: добавление telegram_file_id в media_files");
+        console.log('✅ Колонка telegram_file_id успешно добавлена в media_files');
+      }
+    } catch (error) {
+      console.log('⚠️ Ошибка при проверке/добавлении колонки telegram_file_id в media_files:', error);
     }
 
     console.log('✅ Таблицы базы данных успешно инициализированы!');

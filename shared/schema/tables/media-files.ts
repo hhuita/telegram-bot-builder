@@ -36,6 +36,8 @@ export const mediaFiles = pgTable("media_files", {
   isPublic: integer("is_public").default(0),
   /** Количество использований файла */
   usageCount: integer("usage_count").default(0),
+  /** Кэшированный Telegram file_id для быстрой повторной отправки */
+  telegramFileId: text("telegram_file_id"),
   /** Дата создания файла */
   createdAt: timestamp("created_at").defaultNow(),
   /** Дата последнего обновления файла */
@@ -64,6 +66,8 @@ export const insertMediaFileSchema = z.object({
   tags: z.array(z.string()).default([]),
   /** Флаг публичности (0 = приватный, 1 = публичный) */
   isPublic: z.number().min(0).max(1).default(0),
+  /** Кэшированный Telegram file_id (заполняется автоматически после первой отправки) */
+  telegramFileId: z.string().nullable().optional(),
 });
 
 /** Тип записи медиафайла */
