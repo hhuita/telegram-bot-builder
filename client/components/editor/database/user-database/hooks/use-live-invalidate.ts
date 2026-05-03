@@ -211,7 +211,10 @@ export function useLiveInvalidate({ projectId, selectedTokenId }: UseLiveInvalid
         // lastInteraction, чтобы refetch вернул правильный порядок и не перезаписал
         // наш optimistic update старыми данными
         const usersTimer = setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ['infinite-users', projectId, normalizedTokenId] });
+          queryClient.invalidateQueries({
+            queryKey: ['infinite-users', projectId, normalizedTokenId],
+            refetchType: 'all',
+          });
         }, 1500);
         timers.push(usersTimer);
       }
@@ -236,7 +239,10 @@ export function useLiveInvalidate({ projectId, selectedTokenId }: UseLiveInvalid
         addNewUserToCache(queryClient, projectId, normalizedTokenId, newUserEvent);
 
         queryClient.invalidateQueries({ queryKey: statsKey });
-        queryClient.invalidateQueries({ queryKey: ['infinite-users', projectId, normalizedTokenId] });
+        queryClient.invalidateQueries({
+          queryKey: ['infinite-users', projectId, normalizedTokenId],
+          refetchType: 'all',
+        });
       }
     });
 
