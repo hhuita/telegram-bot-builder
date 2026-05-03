@@ -208,8 +208,8 @@ async def save_user_to_db(user_id: int, username: str = None, first_name: str = 
     try:
         async with db_pool.acquire() as conn:
             result = await conn.fetchrow("""
-                INSERT INTO bot_users (user_id, project_id, token_id, username, first_name, last_name, avatar_url)
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                INSERT INTO bot_users (user_id, project_id, token_id, username, first_name, last_name, avatar_url, interaction_count)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, 1)
                 ON CONFLICT (user_id, project_id, token_id) DO UPDATE SET
                     username = EXCLUDED.username,
                     first_name = EXCLUDED.first_name,
