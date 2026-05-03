@@ -57,13 +57,15 @@ export function DesktopLastMessageCell({ user, projectId }: DesktopLastMessageCe
   const numericUserId = user.userId ? Number(user.userId) : 0;
   const userWithMsg = user as UserBotDataWithLastMessage;
 
-  // Данные из JOIN — доступны сразу без HTTP-запроса
-  const hasJoinData = userWithMsg.lastMessageText != null || userWithMsg.lastMessageAt != null;
+  // Данные из JOIN — доступны сразу без HTTP-запроса.
+  // undefined = поле не пришло (старые данные) → нужен HTTP-запрос
+  // null = JOIN отработал, сообщений нет → запрос не нужен
+  const needsFetch = userWithMsg.lastMessageText === undefined && userWithMsg.lastMessageAt === undefined;
 
-  // HTTP-запрос нужен только если JOIN не вернул данные (старые записи, fallback)
+  // HTTP-запрос только если JOIN-поля отсутствуют в объекте пользователя
   const { data: lastMessage } = useLastMessage(
     projectId,
-    hasJoinData ? undefined : numericUserId  // отключаем запрос если есть JOIN-данные
+    needsFetch ? numericUserId : undefined
   );
 
   // Подписка на real-time обновления через WebSocket
