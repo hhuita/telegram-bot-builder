@@ -84,8 +84,8 @@ export function DialogPanel({
       const response = await fetch(requestUrl, { credentials: 'include' });
       return response.json();
     },
-    staleTime: 5000,
-    refetchOnMount: false,
+    staleTime: 0,
+    refetchOnMount: 'always',
     refetchOnWindowFocus: true,
     select: (data) => {
       if (!Array.isArray(data)) {
