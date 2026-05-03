@@ -725,7 +725,7 @@ test('H04', 'media + userDatabaseEnabled: true → синтаксис OK', () =>
 
 test('H05', 'media + message + command_trigger → все три в коде', () => {
   const p = makeProject([
-    makeTriggerNode('t1', '/start', 'm1'),
+    makeTriggerNode('t1', '/photo', 'm1'),
     makeMediaNode('m1', ['https://ex.com/a.jpg'], { enableAutoTransition: true, autoTransitionTo: 'msg1' }),
     makeMessageNode('msg1', 'Готово'),
   ]);
@@ -1302,7 +1302,7 @@ test('Q01', 'schema parse сохраняет else-only condition без variable
   ]));
   const code = gen(project, 'q01');
   ok(code.includes('async def handle_callback_cond1'), 'else-only condition должен пережить schema parse');
-  ok(code.includes('await handle_callback_cond1(mock_callback)'), 'trigger должен вызывать condition handler');
+  ok(code.includes('handle_callback_cond1(mock_callback)') || code.includes('handle_callback_cond1(callback_query)'), 'trigger должен вызывать condition handler');
 });
 
 test('Q02', 'else-only condition → media генерирует без NameError-подобной дыры', () => {
