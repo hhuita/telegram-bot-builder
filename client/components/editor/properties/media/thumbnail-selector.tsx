@@ -49,6 +49,9 @@ export function ThumbnailSelector({
   /** URL из поля ввода */
   const [urlInput, setUrlInput] = useState("");
 
+  /** Флаг загрузки по URL */
+  const [isUploading, setIsUploading] = useState(false);
+
   const { data: allFiles } = useMediaFiles(projectId);
   const setThumbnail = useSetThumbnail();
 
@@ -63,16 +66,49 @@ export function ThumbnailSelector({
   };
 
   /**
-   * Применяет обложку по введённому URL — ищет запись в БД
+   * Применяет обложку по введённому URL.
+   * Если URL уже есть в БД — берём запись напрямую.
+   * Если внешний https:// — скачиваем на сервер через uploadImageFromUrl,
+   * затем ищем созданную запись по localPath.
    */
   const handleApplyUrl = async () => {
     const trimmed = urlInput.trim();
     if (!trimmed) return;
+
+    // Сначала ищем уже существующую запись
     const found = allFiles?.find((f) => f.url === trimmed);
     if (found) {
       await setThumbnail.mutateAsync({ videoId: videoFileId, thumbnailId: found.id });
       setUrlInput("");
       onSaved?.();
+      return;
+    }
+
+    // Внешний URL — скачиваем на сервер
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      setIsUploading(true);
+      try {
+        const result = await uploadImageFromUrl(trimmed, projectId, 'thumbnail');
+        if (result.success) {
+          const localPath = result.localPath || result.imageUrl || trimmed;
+          // Ищем созданную запись по localPath
+          const uploaded = allFiles?.find((f) => f.url === localPath);
+          if (uploaded) {
+            await setThumbnail.mutateAsync({ videoId: videoFileId, thumbnailId: uploaded.id });
+            toast({ title: 'Обложка загружена', description: result.message });
+          } else {
+            toast({ title: 'Обложка загружена', description: 'Обновите страницу если превью не появилось' });
+          }
+          setUrlInput("");
+          onSaved?.();
+        } else {
+          toast({ title: 'Ошибка', description: 'Не удалось загрузить фото по URL', variant: 'destructive' });
+        }
+      } catch {
+        toast({ title: 'Ошибка', description: 'Не удалось загрузить фото по URL', variant: 'destructive' });
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -120,18 +156,24 @@ export function ThumbnailSelector({
 
       {/* Поле ввода URL */}
       <div className="flex gap-2">
-        <Input
-          value={urlInput}
-          onChange={(e) => setUrlInput(e.target.value)}
-          placeholder="URL фото обложки"
-          className="h-8 text-xs"
-          onKeyDown={(e) => e.key === "Enter" && handleApplyUrl()}
-        />
+        <div className="flex-1 relative">
+          <Input
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            placeholder="URL фото обложки"
+            className="h-8 text-xs"
+            disabled={isUploading}
+            onKeyDown={(e) => e.key === "Enter" && handleApplyUrl()}
+          />
+          {isUploading && (
+            <i className="fas fa-spinner fa-spin absolute right-2 top-1/2 -translate-y-1/2 text-blue-500 text-xs"></i>
+          )}
+        </div>
         <Button
           size="sm"
           variant="outline"
           onClick={handleApplyUrl}
-          disabled={!urlInput.trim() || setThumbnail.isPending}
+          disabled={!urlInput.trim() || setThumbnail.isPending || isUploading}
           className="h-8 px-2 text-xs shrink-0"
         >
           ОК
