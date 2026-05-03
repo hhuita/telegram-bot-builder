@@ -7,6 +7,7 @@
  */
 
 import { Node } from '@/types/bot';
+import { VideoPreview } from './video-preview';
 
 /**
  * Интерфейс свойств компонента MediaAttachmentIndicator
@@ -31,13 +32,7 @@ export function MediaAttachmentIndicator({ node }: MediaAttachmentIndicatorProps
   if (node.data.videoUrl) {
     return (
       <div className="mb-4 rounded-lg overflow-hidden border-2 border-amber-200 dark:border-amber-700/50">
-        <video
-          src={node.data.videoUrl as string}
-          className="w-full h-auto max-h-48 object-cover"
-          muted
-          preload="metadata"
-          onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; }}
-        />
+        <VideoPreview src={node.data.videoUrl as string} />
       </div>
     );
   }

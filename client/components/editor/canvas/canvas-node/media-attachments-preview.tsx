@@ -8,6 +8,7 @@
  */
 
 import { Node } from '@/types/bot';
+import { VideoPreview } from './video-preview';
 
 /** Пропсы компонента */
 interface MediaAttachmentsPreviewProps {
@@ -114,17 +115,11 @@ export function MediaAttachmentsPreview({ node }: MediaAttachmentsPreviewProps) 
           );
         }
 
-        // Превью видеофайла
+        // Превью видеофайла с кнопкой воспроизведения
         if (fileType === 'video') {
           return (
             <div key={url + index} className="rounded-lg overflow-hidden border-2 border-blue-200 dark:border-blue-700/50">
-              <video
-                src={url}
-                className="w-full h-auto max-h-48 object-cover"
-                muted
-                preload="metadata"
-                onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; }}
-              />
+              <VideoPreview src={url} />
             </div>
           );
         }
