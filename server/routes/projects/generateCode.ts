@@ -137,42 +137,33 @@ export async function handleGenerateCode(req: Request, res: Response): Promise<v
 
     // Собираем обложки видео (thumbnailMediaId → telegramFileId обложки)
     const thumbnailFileIds: Record<string, string> = {};
-    if (mediaUrls.size > 0) {
-      try {
-        const mediaFilesWithIds = await storage.getMediaFilesByUrls(Array.from(mediaUrls), projectId);
-        for (const mf of mediaFilesWithIds) {
-          if (mf.thumbnailMediaId) {
-            // Получаем запись обложки по ID
-            const thumbFile = await storage.getMediaFile(mf.thumbnailMediaId);
-            if (thumbFile?.telegramFileId) {
-              thumbnailFileIds[mf.url] = thumbFile.telegramFileId;
-            }
-          }
-        }
-        if (Object.keys(thumbnailFileIds).length > 0) {
-          console.log(`[Generate] Найдено ${Object.keys(thumbnailFileIds).length} обложек видео`);
-        }
-      } catch (err) {
-        console.warn('[Generate] Не удалось получить thumbnailFileIds:', err);
-      }
-    }
-
-    // Собираем прямые URL обложек (thumbnailUrl — строка без FK)
     const thumbnailUrls: Record<string, string> = {};
     if (mediaUrls.size > 0) {
       try {
         const mediaFilesWithIds = await storage.getMediaFilesByUrls(Array.from(mediaUrls), projectId);
         for (const mf of mediaFilesWithIds) {
-          if (mf.thumbnailUrl && !thumbnailFileIds[mf.url]) {
-            // Используем прямой URL только если нет file_id обложки
+          // Обложка через FK (thumbnailMediaId)
+          if (mf.thumbnailMediaId) {
+            const thumbFile = await storage.getMediaFile(mf.thumbnailMediaId);
+            if (thumbFile?.telegramFileId) {
+              // Есть file_id — используем напрямую
+              thumbnailFileIds[mf.url] = thumbFile.telegramFileId;
+            } else if (thumbFile?.url) {
+              // Нет file_id — передаём URL обложки (FSInputFile или внешний URL)
+              thumbnailUrls[mf.url] = thumbFile.url;
+            }
+          }
+          // Обложка через прямой URL (thumbnailUrl — строка без FK)
+          if (mf.thumbnailUrl && !thumbnailFileIds[mf.url] && !thumbnailUrls[mf.url]) {
             thumbnailUrls[mf.url] = mf.thumbnailUrl;
           }
         }
-        if (Object.keys(thumbnailUrls).length > 0) {
-          console.log(`[Generate] Найдено ${Object.keys(thumbnailUrls).length} прямых URL обложек`);
+        const totalThumbs = Object.keys(thumbnailFileIds).length + Object.keys(thumbnailUrls).length;
+        if (totalThumbs > 0) {
+          console.log(`[Generate] Найдено обложек: ${Object.keys(thumbnailFileIds).length} file_id, ${Object.keys(thumbnailUrls).length} URL`);
         }
       } catch (err) {
-        console.warn('[Generate] Не удалось получить thumbnailUrls:', err);
+        console.warn('[Generate] Не удалось получить обложки:', err);
       }
     }
 
