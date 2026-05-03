@@ -6,7 +6,7 @@
  * @module MultiMediaSelector
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -19,6 +19,7 @@ import type { MediaFileData } from "./media-files-list";
 import { Upload, Plus, LinkIcon } from "lucide-react";
 import { uploadImageFromUrl } from "@lib/bot-generator/media/uploadImageFromUrl";
 import { toast } from "@/hooks/use-toast";
+import { useMediaFiles } from "../hooks/use-media";
 
 /** Пропсы компонента MultiMediaSelector */
 export interface MultiMediaSelectorProps {
@@ -53,12 +54,23 @@ export function MultiMediaSelector({
 
   // Проверяем, включена ли клавиатура (для определения скрытых файлов)
   const hasKeyboard = keyboardType === 'inline' || keyboardType === 'reply';
-  
+
+  /** Данные медиафайлов из БД — для получения telegramFileId по URL */
+  const { data: dbFiles } = useMediaFiles(projectId);
+
+  /** Индекс URL → telegramFileId из БД */
+  const fileIdByUrl = useMemo(() => {
+    const map = new Map<string, string | null>();
+    dbFiles?.forEach((f) => map.set(f.url, f.telegramFileId ?? null));
+    return map;
+  }, [dbFiles]);
+
   const files: MediaFileData[] = value.map((url, index) => ({
     url,
     fileName: `Файл ${index + 1}`,
     fileType: getMediaTypeByUrl(url),
-    isHidden: hasKeyboard && index > 0 // Скрываем все файлы кроме первого
+    telegramFileId: fileIdByUrl.get(url) ?? null,
+    isHidden: hasKeyboard && index > 0,
   }));
 
   const handleAddUrl = async () => {
