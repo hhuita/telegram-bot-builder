@@ -54,7 +54,10 @@ export function useLiveInvalidate({ projectId, selectedTokenId }: UseLiveInvalid
         timer = null;
         // Перезапрашиваем актуальные данные из БД
         queryClient.invalidateQueries({ queryKey: statsKey });
-        queryClient.invalidateQueries({ queryKey: ['infinite-users', projectId, selectedTokenId] });
+        // Используем только ['infinite-users', projectId] без selectedTokenId —
+        // null и undefined не равны при сравнении ключей React Query,
+        // поэтому prefix-match по двум элементам покрывает все варианты токена
+        queryClient.invalidateQueries({ queryKey: ['infinite-users', projectId] });
       }, 2000);
     });
 
