@@ -122,11 +122,14 @@ function addNewUserToCache(
   queryClient.setQueriesData<InfiniteData<UsersPageResponse>>(
     { queryKey: ['infinite-users', projectId, normalizedTokenId] },
     (old) => {
-      if (!old) return old;
-      // Добавляем в начало первой страницы
-      const [firstPage, ...rest] = old.pages;
+      // Если кэш пустой (0 пользователей) — создаём начальную структуру
+      const base: InfiniteData<UsersPageResponse> = old ?? {
+        pages: [{ users: [], total: 0, hasMore: false }],
+        pageParams: [0],
+      };
+      const [firstPage, ...rest] = base.pages;
       return {
-        ...old,
+        ...base,
         pages: [
           {
             ...firstPage,
