@@ -213,6 +213,8 @@ export function useLiveInvalidate({ projectId, selectedTokenId }: UseLiveInvalid
         // наш optimistic update старыми данными
         const usersTimer = setTimeout(() => {
           console.log('[LiveInvalidate] invalidateQueries infinite-users', projectId, normalizedTokenId);
+          const queries = queryClient.getQueryCache().findAll({ queryKey: ['infinite-users', projectId] });
+          console.log('[LiveInvalidate] найдено запросов в кэше:', queries.length, queries.map(q => ({ key: q.queryKey, state: q.state.status })));
           queryClient.invalidateQueries({
             queryKey: ['infinite-users', projectId, normalizedTokenId],
             refetchType: 'all',
