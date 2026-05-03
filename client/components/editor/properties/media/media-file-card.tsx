@@ -99,6 +99,20 @@ export function MediaFileCard({
             ) : (
               <img src={url} alt={fileName} className="w-full h-full object-cover" />
             )
+          ) : fileType === 'video' ? (
+            isVariablePlaceholder(url) ? (
+              // Переменная — показываем иконку вместо video
+              <span className="text-lg sm:text-xl">{FILE_ICONS.video}</span>
+            ) : (
+              // Превью видеофайла
+              <video
+                src={url}
+                className="w-full h-full object-cover"
+                muted
+                preload="metadata"
+                onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; }}
+              />
+            )
           ) : (
             <span className="text-lg sm:text-xl">{FILE_ICONS[fileType]}</span>
           )}

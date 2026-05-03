@@ -3,6 +3,7 @@
  * 
  * Отображает визуальное представление прикреплённых не-image файлов:
  * видео, аудио или документов к сообщению.
+ * Для видео показывает превью через тег video, для остальных — иконку.
  */
 
 import { Node } from '@/types/bot';
@@ -20,19 +21,28 @@ interface MediaAttachmentIndicatorProps {
 /**
  * Компонент индикатора прикреплённых медиафайлов
  *
- * @component
- * @description Отображает индикатор прикреплённого видео, аудио или документа
+ * Для videoUrl рендерит превью через тег video.
+ * Для audioUrl и documentUrl показывает текстовый индикатор с иконкой.
  *
  * @param {MediaAttachmentIndicatorProps} props - Свойства компонента
- * @param {Node} props.node - Узел с медиафайлами
- *
- * @returns {JSX.Element} Компонент индикатора медиафайлов
+ * @returns {JSX.Element | null} Компонент индикатора или null
  */
 export function MediaAttachmentIndicator({ node }: MediaAttachmentIndicatorProps) {
+  if (node.data.videoUrl) {
+    return (
+      <div className="mb-4 rounded-lg overflow-hidden border-2 border-amber-200 dark:border-amber-700/50">
+        <video
+          src={node.data.videoUrl as string}
+          className="w-full h-auto max-h-48 object-cover"
+          muted
+          preload="metadata"
+          onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; }}
+        />
+      </div>
+    );
+  }
+
   const getMediaInfo = () => {
-    if (node.data.videoUrl) {
-      return { icon: 'video', text: 'Видео прикреплено' };
-    }
     if (node.data.audioUrl) {
       return { icon: 'music', text: 'Аудио прикреплено' };
     }

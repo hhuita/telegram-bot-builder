@@ -114,7 +114,22 @@ export function MediaAttachmentsPreview({ node }: MediaAttachmentsPreviewProps) 
           );
         }
 
-        // Не изображения — карточка с иконкой
+        // Превью видеофайла
+        if (fileType === 'video') {
+          return (
+            <div key={url + index} className="rounded-lg overflow-hidden border-2 border-blue-200 dark:border-blue-700/50">
+              <video
+                src={url}
+                className="w-full h-auto max-h-48 object-cover"
+                muted
+                preload="metadata"
+                onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; }}
+              />
+            </div>
+          );
+        }
+
+        // Аудио и документы — карточка с иконкой
         return (
           <div key={url + index} className="rounded-lg border-2 border-blue-200 dark:border-blue-700/50 p-3 bg-blue-50/50 dark:bg-blue-900/20">
             <div className="flex items-center gap-3">
