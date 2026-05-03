@@ -112,7 +112,7 @@ export default defineConfig(async () => {
       hmr: {
         overlay: false,
         clientPort: 5000
-      }
+      },
     },
     define: {
       global: 'globalThis',
