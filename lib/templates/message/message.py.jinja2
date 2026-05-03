@@ -345,7 +345,7 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
                 return await _b.send_video(_target_chat_id, _cached_fid, caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id{{ _vid_thumb_arg }})
             logging.info(f"📤 Узел {{ nodeId }}: отправка видео через FSInputFile")
 {%- if _vid_thumb_fid %}
-            logging.info(f"🖼 Узел {{ nodeId }}: обложка через file_id={{ _vid_thumb_fid[:20] }}...")
+            logging.info(f"🖼 Узел {{ nodeId }}: обложка через file_id={{ _vid_thumb_fid }}...")
 {%- elif _vid_thumb_url and '/uploads/' in _vid_thumb_url %}
             logging.info(f"🖼 Узел {{ nodeId }}: обложка через FSInputFile={{ _vid_thumb_url }}")
 {%- elif _vid_thumb_url %}
@@ -379,7 +379,7 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
                 return await _b.send_video(_target_chat_id, _rt_fid, caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id{{ _vid_thumb_arg }})
             logging.info(f"📤 Узел {{ nodeId }}: первая отправка видео по URL, file_id будет получен из ответа")
 {%- if _vid_thumb_fid %}
-            logging.info(f"🖼 Узел {{ nodeId }}: обложка через file_id={{ _vid_thumb_fid[:20] }}...")
+            logging.info(f"🖼 Узел {{ nodeId }}: обложка через file_id={{ _vid_thumb_fid }}...")
 {%- elif _vid_thumb_url and '/uploads/' in _vid_thumb_url %}
             logging.info(f"🖼 Узел {{ nodeId }}: обложка через FSInputFile={{ _vid_thumb_url }}")
 {%- elif _vid_thumb_url %}
