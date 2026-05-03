@@ -23,6 +23,7 @@ const CHANNEL_TYPE_MAP: Record<string, ProjectEvent['type']> = {
   'bot:stopped': 'bot-stopped',
   'bot:error': 'bot-error',
   'bot:message': 'new-message',
+  'bot:user': 'new-user',
 };
 
 /**

@@ -198,14 +198,16 @@ async def init_database():
         db_pool = None
 
 
-async def save_user_to_db(user_id: int, username: str = None, first_name: str = None, 
-                          last_name: str = None, avatar_url: str = None):
-    """Сохраняет пользователя в базу данных"""
+async def save_user_to_db(user_id: int, username: str = None, first_name: str = None,
+                          last_name: str = None, avatar_url: str = None,
+                          is_premium: bool = False):
+    """Сохраняет пользователя в базу данных и публикует событие new-user в Redis при первом визите"""
+    from datetime import datetime
     if not db_pool:
         return False
     try:
         async with db_pool.acquire() as conn:
-            await conn.execute("""
+            result = await conn.fetchrow("""
                 INSERT INTO bot_users (user_id, project_id, token_id, username, first_name, last_name, avatar_url)
                 VALUES ($1, $2, $3, $4, $5, $6, $7)
                 ON CONFLICT (user_id, project_id, token_id) DO UPDATE SET
@@ -215,7 +217,32 @@ async def save_user_to_db(user_id: int, username: str = None, first_name: str = 
                     avatar_url = COALESCE(EXCLUDED.avatar_url, bot_users.avatar_url),
                     last_interaction = NOW(),
                     interaction_count = bot_users.interaction_count + 1
+                RETURNING xmax
             """, user_id, PROJECT_ID, TOKEN_ID, username, first_name, last_name, avatar_url)
+
+        # xmax = 0 означает INSERT (новый пользователь), >0 — UPDATE (существующий)
+        is_new_user = result is not None and result['xmax'] == 0
+
+        if is_new_user and _redis_client:
+            try:
+                _new_user_payload = json.dumps({
+                    "userId": str(user_id),
+                    "username": username,
+                    "firstName": first_name,
+                    "lastName": last_name,
+                    "avatarUrl": avatar_url,
+                    "isBot": 0,
+                    "isPremium": 1 if is_premium else 0,
+                    "registeredAt": datetime.utcnow().isoformat(),
+                }, ensure_ascii=False)
+                await _redis_client.publish(
+                    f"bot:user:{PROJECT_ID}:{TOKEN_ID}",
+                    _new_user_payload
+                )
+                logging.debug(f"📡 Redis publish: bot:user:{PROJECT_ID}:{TOKEN_ID} (новый пользователь {user_id})")
+            except Exception as _re:
+                logging.debug(f"⚠️ Redis publish new-user не удался: {_re}")
+
         return True
     except Exception as e:
         logging.error(f"Ошибка сохранения пользователя в БД: {e}")

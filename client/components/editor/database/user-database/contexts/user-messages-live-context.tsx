@@ -1,10 +1,10 @@
 /**
- * @fileoverview Контекст единого WebSocket-соединения для live-сообщений панели пользователей.
- * Одно соединение на всю панель — все строки таблицы подписываются через контекст.
+ * @fileoverview Контекст единого WebSocket-соединения для live-событий панели пользователей.
+ * Одно соединение на всю панель — все подписчики получают события new-message и new-user.
  * @module client/components/editor/database/user-database/contexts/user-messages-live-context
  */
 
-import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useRef, useCallback } from 'react';
 
 /**
  * Структура события new-message из WebSocket
@@ -37,25 +37,62 @@ export interface NewMessageLiveEvent {
   timestamp: string;
 }
 
-/** Тип колбэка-подписчика на события */
-type MessageListener = (event: NewMessageLiveEvent) => void;
+/**
+ * Структура события new-user из WebSocket.
+ * Публикуется Python-ботом при первом визите пользователя (INSERT, не UPDATE).
+ */
+export interface NewUserLiveEvent {
+  /** Тип события */
+  type: 'new-user';
+  /** Идентификатор проекта */
+  projectId: number;
+  /** Идентификатор токена */
+  tokenId?: number;
+  /** Данные нового пользователя */
+  data: {
+    /** Идентификатор пользователя в Telegram */
+    userId: string;
+    /** Username пользователя */
+    username: string | null;
+    /** Имя пользователя */
+    firstName: string | null;
+    /** Фамилия пользователя */
+    lastName: string | null;
+    /** URL аватарки */
+    avatarUrl: string | null;
+    /** Флаг бота */
+    isBot: number;
+    /** Флаг Premium */
+    isPremium: number;
+    /** Дата регистрации в ISO-формате */
+    registeredAt: string;
+  };
+  /** Временная метка события */
+  timestamp: string;
+}
+
+/** Все типы live-событий */
+export type LiveEvent = NewMessageLiveEvent | NewUserLiveEvent;
+
+/** Тип колбэка-подписчика на все live-события */
+type LiveEventListener = (event: LiveEvent) => void;
 
 /**
- * Значение контекста live-сообщений
+ * Значение контекста live-событий
  */
 interface UserMessagesLiveContextValue {
   /**
-   * Подписаться на входящие события new-message.
+   * Подписаться на входящие live-события (new-message и new-user).
    * @param listener - Функция-обработчик события
    * @returns Функция отписки
    */
-  subscribe: (listener: MessageListener) => () => void;
+  subscribe: (listener: LiveEventListener) => () => void;
 }
 
 const UserMessagesLiveContext = createContext<UserMessagesLiveContextValue | null>(null);
 
 /**
- * Пропсы провайдера контекста live-сообщений
+ * Пропсы провайдера контекста live-событий
  */
 interface UserMessagesLiveProviderProps {
   /** Идентификатор проекта */
@@ -65,13 +102,13 @@ interface UserMessagesLiveProviderProps {
 }
 
 /**
- * Провайдер единого WebSocket-соединения для live-сообщений.
- * Открывает одно WS-соединение и рассылает события всем подписчикам.
+ * Провайдер единого WebSocket-соединения для live-событий.
+ * Открывает одно WS-соединение и рассылает события new-message и new-user подписчикам.
  * @param props - Пропсы провайдера
  * @returns JSX провайдер контекста
  */
 export function UserMessagesLiveProvider({ projectId, children }: UserMessagesLiveProviderProps) {
-  const listenersRef = useRef<Set<MessageListener>>(new Set());
+  const listenersRef = useRef<Set<LiveEventListener>>(new Set());
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const destroyedRef = useRef(false);
@@ -88,8 +125,9 @@ export function UserMessagesLiveProvider({ projectId, children }: UserMessagesLi
 
       ws.onmessage = (event) => {
         try {
-          const msg = JSON.parse(event.data as string) as NewMessageLiveEvent;
-          if (msg.type !== 'new-message') return;
+          const msg = JSON.parse(event.data as string) as LiveEvent;
+          // Пропускаем только поддерживаемые типы событий
+          if (msg.type !== 'new-message' && msg.type !== 'new-user') return;
           if (msg.projectId !== projectId) return;
           listenersRef.current.forEach((fn) => fn(msg));
         } catch {
@@ -117,7 +155,7 @@ export function UserMessagesLiveProvider({ projectId, children }: UserMessagesLi
     };
   }, [projectId]);
 
-  const subscribe = useCallback((listener: MessageListener): (() => void) => {
+  const subscribe = useCallback((listener: LiveEventListener): (() => void) => {
     listenersRef.current.add(listener);
     return () => listenersRef.current.delete(listener);
   }, []);
@@ -130,7 +168,7 @@ export function UserMessagesLiveProvider({ projectId, children }: UserMessagesLi
 }
 
 /**
- * Хук доступа к контексту live-сообщений.
+ * Хук доступа к контексту live-событий.
  * Должен использоваться внутри UserMessagesLiveProvider.
  * @returns Значение контекста или null если провайдер не найден
  */

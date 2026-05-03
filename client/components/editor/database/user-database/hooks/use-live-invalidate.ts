@@ -1,12 +1,17 @@
 /**
  * @fileoverview Хук real-time обновления статистики и списка пользователей.
- * При событии new-message мгновенно обновляет кэш (optimistic update),
- * затем сразу синхронизирует данные с PostgreSQL без задержки.
+ * Обрабатывает события new-message и new-user — мгновенно обновляет кэш (optimistic update),
+ * затем синхронизирует данные с PostgreSQL через invalidateQueries.
  */
 
 import { useEffect } from 'react';
 import { useQueryClient, InfiniteData } from '@tanstack/react-query';
-import { useUserMessagesLiveContext, NewMessageLiveEvent } from '../contexts/user-messages-live-context';
+import {
+  useUserMessagesLiveContext,
+  NewMessageLiveEvent,
+  NewUserLiveEvent,
+  LiveEvent,
+} from '../contexts/user-messages-live-context';
 import { buildUsersApiUrl } from '@/components/editor/database/utils';
 import { UserStats } from '../types';
 import { UserBotData } from '@shared/schema';
@@ -34,11 +39,11 @@ interface UsersPageResponse {
 }
 
 /**
- * Мгновенно обновляет lastInteraction и interactionCount пользователя в кэше infinite-users.
+ * Мгновенно обновляет lastInteraction и interactionCount пользователя в кэше.
  * @param queryClient - Клиент React Query
  * @param projectId - Идентификатор проекта
- * @param normalizedTokenId - Нормализованный идентификатор токена (null если не выбран)
- * @param userId - Идентификатор пользователя из WS-события
+ * @param normalizedTokenId - Нормализованный идентификатор токена
+ * @param userId - Идентификатор пользователя
  */
 function updateUserInCache(
   queryClient: ReturnType<typeof useQueryClient>,
@@ -70,11 +75,84 @@ function updateUserInCache(
 }
 
 /**
+ * Мгновенно добавляет нового пользователя в первую страницу кэша infinite-users.
+ * @param queryClient - Клиент React Query
+ * @param projectId - Идентификатор проекта
+ * @param normalizedTokenId - Нормализованный идентификатор токена
+ * @param event - Событие new-user с данными пользователя
+ */
+function addNewUserToCache(
+  queryClient: ReturnType<typeof useQueryClient>,
+  projectId: number,
+  normalizedTokenId: number | null,
+  event: NewUserLiveEvent,
+): void {
+  const { data } = event;
+  const newUser: UserBotData = {
+    id: Date.now() * -1, // временный отрицательный id до refetch
+    projectId,
+    tokenId: event.tokenId ?? normalizedTokenId ?? 0,
+    userId: Number(data.userId),
+    userName: data.username ?? null,
+    firstName: data.firstName ?? null,
+    lastName: data.lastName ?? null,
+    avatarUrl: data.avatarUrl ?? null,
+    isBot: data.isBot ?? 0,
+    isPremium: data.isPremium ?? 0,
+    lastInteraction: new Date(data.registeredAt),
+    interactionCount: 1,
+    userData: {},
+    currentState: null,
+    preferences: {},
+    commandsUsed: {},
+    sessionsCount: 1,
+    totalMessagesSent: 0,
+    totalMessagesReceived: 0,
+    deviceInfo: null,
+    locationData: null,
+    contactData: null,
+    isBlocked: 0,
+    isActive: 1,
+    tags: [],
+    notes: null,
+    createdAt: new Date(data.registeredAt),
+    updatedAt: new Date(data.registeredAt),
+  };
+
+  queryClient.setQueriesData<InfiniteData<UsersPageResponse>>(
+    { queryKey: ['infinite-users', projectId, normalizedTokenId] },
+    (old) => {
+      if (!old) return old;
+      // Добавляем в начало первой страницы
+      const [firstPage, ...rest] = old.pages;
+      return {
+        ...old,
+        pages: [
+          {
+            ...firstPage,
+            users: [newUser, ...firstPage.users],
+            total: (firstPage.total ?? 0) + 1,
+          },
+          ...rest,
+        ],
+      };
+    },
+  );
+}
+
+/**
  * Хук real-time обновления статистики и списка пользователей.
- * При каждом new-message:
- *   - мгновенно инкрементирует totalInteractions в кэше статистики
+ *
+ * При new-message:
+ *   - мгновенно инкрементирует totalInteractions и пересчитывает среднее
  *   - мгновенно обновляет lastInteraction и interactionCount пользователя в таблице
- *   - сразу инвалидирует кэш для синхронизации с PostgreSQL (без дебаунса)
+ *   - инвалидирует кэш для фонового refetch
+ *
+ * При new-user:
+ *   - мгновенно добавляет пользователя в таблицу
+ *   - мгновенно инкрементирует totalUsers и activeUsers в статистике
+ *   - инвалидирует кэш для фонового refetch
+ *
  * @param params - Параметры хука
  * @returns void
  */
@@ -87,31 +165,55 @@ export function useLiveInvalidate({ projectId, selectedTokenId }: UseLiveInvalid
 
     const statsUrl = buildUsersApiUrl(`/api/projects/${projectId}/users/stats`, selectedTokenId);
     const statsKey = [statsUrl, selectedTokenId];
-    // Нормализуем selectedTokenId: undefined → null, чтобы совпасть с queryKey в useInfiniteUsers
     const normalizedTokenId = selectedTokenId ?? null;
 
-    const unsubscribe = liveContext.subscribe((event: NewMessageLiveEvent) => {
-      const userId = event.data?.userId;
+    const unsubscribe = liveContext.subscribe((event: LiveEvent) => {
+      if (event.type === 'new-message') {
+        const msg = event as NewMessageLiveEvent;
+        const userId = msg.data?.userId;
 
-      // Мгновенный optimistic update статистики — инкрементируем totalInteractions и пересчитываем среднее
-      queryClient.setQueryData<UserStats>(statsKey, (old) => {
-        const newTotal = (old?.totalInteractions ?? 0) + 1;
-        const users = old?.totalUsers ?? 1;
-        return {
-          ...(old ?? {}),
-          totalInteractions: newTotal,
-          avgInteractionsPerUser: Math.round((newTotal / users) * 100) / 100,
-        };
-      });
+        // Optimistic update статистики
+        queryClient.setQueryData<UserStats>(statsKey, (old) => {
+          const newTotal = (old?.totalInteractions ?? 0) + 1;
+          const users = old?.totalUsers ?? 1;
+          return {
+            ...(old ?? {}),
+            totalInteractions: newTotal,
+            avgInteractionsPerUser: Math.round((newTotal / users) * 100) / 100,
+          };
+        });
 
-      // Мгновенный optimistic update таблицы — обновляем lastInteraction и interactionCount
-      if (userId) {
-        updateUserInCache(queryClient, projectId, normalizedTokenId, userId);
+        // Optimistic update строки пользователя в таблице
+        if (userId) {
+          updateUserInCache(queryClient, projectId, normalizedTokenId, userId);
+        }
+
+        queryClient.invalidateQueries({ queryKey: statsKey });
+        queryClient.invalidateQueries({ queryKey: ['infinite-users', projectId, normalizedTokenId] });
       }
 
-      // Сразу инвалидируем кэш — React Query сделает фоновый refetch
-      queryClient.invalidateQueries({ queryKey: statsKey });
-      queryClient.invalidateQueries({ queryKey: ['infinite-users', projectId, normalizedTokenId] });
+      if (event.type === 'new-user') {
+        const newUserEvent = event as NewUserLiveEvent;
+
+        // Optimistic update статистики — новый активный пользователь
+        queryClient.setQueryData<UserStats>(statsKey, (old) => {
+          const newTotalUsers = (old?.totalUsers ?? 0) + 1;
+          const newActiveUsers = (old?.activeUsers ?? 0) + 1;
+          const totalInteractions = old?.totalInteractions ?? 0;
+          return {
+            ...(old ?? {}),
+            totalUsers: newTotalUsers,
+            activeUsers: newActiveUsers,
+            avgInteractionsPerUser: Math.round((totalInteractions / newTotalUsers) * 100) / 100,
+          };
+        });
+
+        // Мгновенно добавляем пользователя в таблицу
+        addNewUserToCache(queryClient, projectId, normalizedTokenId, newUserEvent);
+
+        queryClient.invalidateQueries({ queryKey: statsKey });
+        queryClient.invalidateQueries({ queryKey: ['infinite-users', projectId, normalizedTokenId] });
+      }
     });
 
     return () => {
