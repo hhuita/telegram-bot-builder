@@ -14,6 +14,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Upload, X } from "lucide-react";
 import { useMediaFiles, useSetThumbnail } from "../hooks/use-media";
 import { MediaManager } from "./media-manager";
+import { uploadImageFromUrl } from "@lib/bot-generator/media/uploadImageFromUrl";
+import { toast } from "@/hooks/use-toast";
 import type { MediaFile } from "@shared/schema";
 
 /** Пропсы компонента ThumbnailSelector */
