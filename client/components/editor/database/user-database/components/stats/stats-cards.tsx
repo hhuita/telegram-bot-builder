@@ -85,6 +85,22 @@ const STATS_DATA = [
 ];
 
 /**
+ * Форматирует числовое значение для отображения в карточке статистики.
+ * Большие числа сокращаются (1000 → 1K, 1000000 → 1M).
+ * Дробные числа округляются до 1 знака после запятой.
+ * @param value - Числовое значение или undefined
+ * @returns Отформатированная строка
+ */
+function formatStatValue(value: number | undefined): string {
+  if (value === undefined || value === null) return '0';
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+  // Округляем дробные числа до 1 знака
+  if (!Number.isInteger(value)) return value.toFixed(1);
+  return String(value);
+}
+
+/**
  * Компонент сетки статистических карточек
  * @param props - Пропсы компонента
  * @returns JSX компонент сетки статистики
@@ -118,8 +134,8 @@ export function StatsCards({ stats }: StatsCardsProps) {
               <stat.icon className="[container-type:inline-size]:w-[clamp(16px,4cqw,24px)] w-6 h-6 text-white" />
             </div>
             <div className="text-center">
-              <p className="[container-type:inline-size]:text-[clamp(14px,4cqw,20px)] text-2xl font-bold text-foreground tabular-nums leading-none">
-                {statValues[idx]}
+              <p className="[container-type:inline-size]:text-[clamp(14px,4cqw,20px)] text-2xl font-bold text-foreground tabular-nums leading-none overflow-hidden text-ellipsis w-full text-center" title={String(statValues[idx] ?? 0)}>
+                {formatStatValue(statValues[idx])}
               </p>
               <p className="[container-type:inline-size]:text-[clamp(8px,2.5cqw,10px)] text-xs font-medium text-muted-foreground mt-1 uppercase tracking-wide">
                 {stat.label}
