@@ -39,7 +39,8 @@ interface UsersPageResponse {
 }
 
 /**
- * Мгновенно обновляет lastInteraction и interactionCount пользователя в кэше.
+ * Мгновенно обновляет lastInteraction и interactionCount пользователя в кэше,
+ * и перемещает его в начало списка (сортировка по последней активности как в Telegram).
  * @param queryClient - Клиент React Query
  * @param projectId - Идентификатор проекта
  * @param normalizedTokenId - Нормализованный идентификатор токена
@@ -58,17 +59,27 @@ function updateUserInCache(
       if (!old) return old;
       return {
         ...old,
-        pages: old.pages.map((page) => ({
-          ...page,
-          users: page.users.map((user) => {
-            if (String(user.userId) !== String(userId)) return user;
-            return {
-              ...user,
-              lastInteraction: now,
-              interactionCount: (user.interactionCount ?? 0) + 1,
-            };
-          }),
-        })),
+        pages: old.pages.map((page, pageIndex) => {
+          const userIndex = page.users.findIndex((u) => String(u.userId) === String(userId));
+          if (userIndex === -1) return page;
+
+          const updatedUser = {
+            ...page.users[userIndex],
+            lastInteraction: now,
+            interactionCount: (page.users[userIndex].interactionCount ?? 0) + 1,
+          };
+
+          // Убираем пользователя с текущей позиции
+          const withoutUser = page.users.filter((_, i) => i !== userIndex);
+
+          // На первой странице — перемещаем в начало (как в Telegram)
+          // На остальных страницах — просто обновляем на месте
+          const newUsers = pageIndex === 0
+            ? [updatedUser, ...withoutUser]
+            : [...withoutUser.slice(0, userIndex), updatedUser, ...withoutUser.slice(userIndex)];
+
+          return { ...page, users: newUsers };
+        }),
       };
     },
   );
