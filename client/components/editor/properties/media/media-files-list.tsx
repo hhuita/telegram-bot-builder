@@ -41,12 +41,14 @@ export interface MediaFilesListProps {
   files: MediaFileData[];
   onRemove: (index: number) => void;
   isHidden?: (index: number) => boolean;
+  /** Callback при установке/сбросе обложки — передаёт URL видео и URL обложки */
+  onThumbnailSet?: (videoUrl: string, thumbnailUrl: string | null) => void;
 }
 
 /**
  * Компонент списка медиафайлов
  */
-export function MediaFilesList({ files, onRemove, isHidden }: MediaFilesListProps) {
+export function MediaFilesList({ files, onRemove, isHidden, onThumbnailSet }: MediaFilesListProps) {
   return (
     <div className="space-y-3">
       {files.map((file, index) => (
@@ -55,6 +57,7 @@ export function MediaFilesList({ files, onRemove, isHidden }: MediaFilesListProp
           {...file}
           onRemove={() => onRemove(index)}
           isHidden={isHidden?.(index) ?? file.isHidden ?? false}
+          onThumbnailSet={onThumbnailSet}
         />
       ))}
     </div>

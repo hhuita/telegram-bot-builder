@@ -54,6 +54,8 @@ export interface MediaFileCardProps {
   thumbnailDirectUrl?: string | null;
   /** ID проекта (нужен для загрузки фото для выбора обложки) */
   projectId?: number;
+  /** Callback при установке/сбросе обложки — передаёт URL видео и URL обложки */
+  onThumbnailSet?: (videoUrl: string, thumbnailUrl: string | null) => void;
 }
 
 /** Иконка для типа файла */
@@ -86,6 +88,7 @@ export function MediaFileCard({
   thumbnailUrl,
   thumbnailDirectUrl,
   projectId,
+  onThumbnailSet,
 }: MediaFileCardProps) {
   /** Флаг успешного копирования file_id */
   const [copied, setCopied] = useState(false);
@@ -234,6 +237,7 @@ export function MediaFileCard({
             currentThumbnailUrl={thumbnailUrl}
             currentThumbnailDirectUrl={thumbnailDirectUrl}
             projectId={projectId}
+            onThumbnailSet={(thumbUrl) => onThumbnailSet?.(url, thumbUrl)}
           />
         </div>
       )}

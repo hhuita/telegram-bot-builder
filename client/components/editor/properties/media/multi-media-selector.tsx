@@ -32,6 +32,10 @@ export interface MultiMediaSelectorProps {
   keyboardType?: string;
   onNodeUpdate?: (nodeId: string, updates: Partial<any>) => void;
   nodeId?: string;
+  /** Текущие обложки из данных ноды: ключ — URL видео, значение — URL обложки */
+  thumbnailsMap?: Record<string, string>;
+  /** Callback при изменении обложек в ноде */
+  onThumbnailsChange?: (thumbnails: Record<string, string>) => void;
 }
 
 /**
@@ -46,7 +50,9 @@ export function MultiMediaSelector({
   nodeName = "node",
   keyboardType = "none",
   onNodeUpdate,
-  nodeId
+  nodeId,
+  thumbnailsMap = {},
+  onThumbnailsChange,
 }: MultiMediaSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [urlInput, setUrlInput] = useState('');
@@ -150,7 +156,21 @@ export function MultiMediaSelector({
 
       {/* Files List */}
       {files.length > 0 && (
-        <MediaFilesList files={files} onRemove={handleRemoveFile} isHidden={(index) => hasKeyboard && index > 0} />
+        <MediaFilesList
+          files={files}
+          onRemove={handleRemoveFile}
+          isHidden={(index) => hasKeyboard && index > 0}
+          onThumbnailSet={(videoUrl, thumbUrl) => {
+            if (!onThumbnailsChange) return;
+            const updated = { ...thumbnailsMap };
+            if (thumbUrl === null) {
+              delete updated[videoUrl];
+            } else {
+              updated[videoUrl] = thumbUrl;
+            }
+            onThumbnailsChange(updated);
+          }}
+        />
       )}
 
       {/* Кнопка включения всех файлов и предупреждение */}

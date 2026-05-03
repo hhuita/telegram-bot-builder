@@ -30,6 +30,8 @@ export interface ThumbnailSelectorProps {
   projectId: number;
   /** Callback после успешного сохранения */
   onSaved?: () => void;
+  /** Callback при установке обложки — передаёт URL обложки для сохранения в ноде */
+  onThumbnailSet?: (thumbnailUrl: string | null) => void;
 }
 
 /**
@@ -44,6 +46,7 @@ export function ThumbnailSelector({
   currentThumbnailDirectUrl,
   projectId,
   onSaved,
+  onThumbnailSet,
 }: ThumbnailSelectorProps) {
   /** Флаг открытия MediaManager */
   const [isOpen, setIsOpen] = useState(false);
@@ -64,6 +67,7 @@ export function ThumbnailSelector({
    */
   const handleSelectFile = async (file: MediaFile) => {
     await setThumbnail.mutateAsync({ videoId: videoFileId, thumbnailId: file.id, thumbnailUrl: null });
+    onThumbnailSet?.(file.url);
     setIsOpen(false);
     onSaved?.();
   };
@@ -82,6 +86,7 @@ export function ThumbnailSelector({
     if (found) {
       // Файл уже в библиотеке — используем FK
       await setThumbnail.mutateAsync({ videoId: videoFileId, thumbnailId: found.id, thumbnailUrl: null });
+      onThumbnailSet?.(found.url);
       setUrlInput("");
       onSaved?.();
       return;
@@ -89,6 +94,7 @@ export function ThumbnailSelector({
 
     // Внешний URL или /uploads/ не в БД — сохраняем как строку напрямую
     await setThumbnail.mutateAsync({ videoId: videoFileId, thumbnailId: null, thumbnailUrl: trimmed });
+    onThumbnailSet?.(trimmed);
     setUrlInput("");
     onSaved?.();
   };
@@ -98,6 +104,7 @@ export function ThumbnailSelector({
    */
   const handleRemove = async () => {
     await setThumbnail.mutateAsync({ videoId: videoFileId, thumbnailId: null, thumbnailUrl: null });
+    onThumbnailSet?.(null);
     onSaved?.();
   };
 

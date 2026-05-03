@@ -143,6 +143,10 @@ export function MediaFileSection({
             keyboardType={selectedNode.data.keyboardType}
             onNodeUpdate={onNodeUpdate}
             nodeId={selectedNode.id}
+            thumbnailsMap={selectedNode.data.attachedMediaThumbnails || {}}
+            onThumbnailsChange={(thumbnails) =>
+              onNodeUpdate(selectedNode.id, { attachedMediaThumbnails: thumbnails })
+            }
           />
         </div>
       )}

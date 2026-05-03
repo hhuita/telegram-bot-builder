@@ -709,6 +709,8 @@ export const nodeSchema = z.object({
     httpRequestPaginationLimit: z.number().default(10).optional(),
     /** Максимальное количество страниц для режима fetch_all */
     httpRequestPaginationMaxPages: z.number().default(20).optional(),
+    /** Словарь обложек медиафайлов: ключ — URL видео, значение — URL обложки */
+    attachedMediaThumbnails: z.record(z.string(), z.string()).optional().default({}),
   }),
 });
 

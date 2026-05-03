@@ -167,6 +167,29 @@ export async function handleGenerateCode(req: Request, res: Response): Promise<v
       }
     }
 
+    // Собираем attachedMediaThumbnails из нод как fallback
+    const nodeThumbnailUrls: Record<string, string> = {};
+    for (const node of allNodes) {
+      const data = node?.data;
+      if (!data?.attachedMediaThumbnails) continue;
+      for (const [videoUrl, thumbUrl] of Object.entries(data.attachedMediaThumbnails)) {
+        if (typeof thumbUrl === 'string') {
+          nodeThumbnailUrls[videoUrl] = thumbUrl;
+        }
+      }
+    }
+
+    // Fallback из нод project.json (приоритет ниже БД)
+    for (const [videoUrl, thumbUrl] of Object.entries(nodeThumbnailUrls)) {
+      if (!thumbnailFileIds[videoUrl] && !thumbnailUrls[videoUrl]) {
+        thumbnailUrls[videoUrl] = thumbUrl;
+      }
+    }
+
+    if (Object.keys(nodeThumbnailUrls).length > 0) {
+      console.log(`[Generate] Fallback обложек из нод: ${Object.keys(nodeThumbnailUrls).length}`);
+    }
+
     // Генерируем код
     const generatePythonCode = await loadGenerator();
     const code = generatePythonCode(botDataForGenerator, {
