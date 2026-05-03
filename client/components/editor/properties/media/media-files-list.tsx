@@ -15,6 +15,8 @@ export interface MediaFileData {
   fileType: string;
   description?: string;
   tags?: string[];
+  /** Кэшированный Telegram file_id (появляется после первой отправки ботом) */
+  telegramFileId?: string | null;
   isHidden?: boolean;
 }
 

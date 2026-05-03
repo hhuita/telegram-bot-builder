@@ -3,13 +3,15 @@
  *
  * Отображает информацию о файле с кнопками просмотра и удаления.
  * Поддерживает переменные вида {var.path} — показывает иконку вместо img.
+ * Показывает кэшированный Telegram file_id если он есть.
  *
  * @module MediaFileCard
  */
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, X } from "lucide-react";
+import { Eye, X, Copy, Check } from "lucide-react";
 
 /**
  * Проверяет, является ли строка переменной вида {var.path}
@@ -27,6 +29,8 @@ export interface MediaFileCardProps {
   fileType: string;
   description?: string;
   tags?: string[];
+  /** Кэшированный Telegram file_id (появляется после первой отправки ботом) */
+  telegramFileId?: string | null;
   onPreview?: () => void;
   onRemove?: () => void;
   isHidden?: boolean;
@@ -44,6 +48,8 @@ const FILE_ICONS: Record<string, string> = {
 
 /**
  * Компонент карточки медиафайла
+ * @param props - Свойства компонента
+ * @returns JSX элемент
  */
 export function MediaFileCard({
   url,
@@ -51,16 +57,30 @@ export function MediaFileCard({
   fileType,
   description,
   tags,
+  telegramFileId,
   onPreview,
   onRemove,
   isHidden = false
 }: MediaFileCardProps) {
+  /** Флаг успешного копирования file_id */
+  const [copied, setCopied] = useState(false);
+
   const handlePreview = () => {
     if (onPreview) {
       onPreview();
     } else if (fileType === 'image' || fileType === 'photo') {
       window.open(url, '_blank');
     }
+  };
+
+  /**
+   * Копирует Telegram file_id в буфер обмена
+   */
+  const handleCopyFileId = async () => {
+    if (!telegramFileId) return;
+    await navigator.clipboard.writeText(telegramFileId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -121,7 +141,7 @@ export function MediaFileCard({
       </div>
 
       {/* Details */}
-      {(description || tags?.length) && (
+      {(description || tags?.length || telegramFileId !== undefined) && (
         <div className="mt-3 space-y-2 bg-slate-50/50 dark:bg-slate-900/30 rounded-lg p-2 border border-slate-200/40 dark:border-slate-800/40">
           {description && (
             <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300">
@@ -134,6 +154,35 @@ export function MediaFileCard({
               <i className="fas fa-tag text-xs mr-1"></i>{tag}
             </Badge>
           ))}
+          {/* Telegram File ID */}
+          {telegramFileId !== undefined && (
+            <div className="flex items-center gap-2 pt-1">
+              <span className="text-xs text-slate-500 dark:text-slate-400 shrink-0">🤖 File ID:</span>
+              {telegramFileId ? (
+                <>
+                  <span className="text-xs font-mono text-slate-600 dark:text-slate-300 truncate flex-1">
+                    {telegramFileId}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleCopyFileId}
+                    className="h-5 w-5 p-0 shrink-0"
+                    title="Скопировать File ID"
+                  >
+                    {copied
+                      ? <Check className="w-3 h-3 text-emerald-500" />
+                      : <Copy className="w-3 h-3 text-slate-400" />
+                    }
+                  </Button>
+                </>
+              ) : (
+                <span className="text-xs text-slate-400 dark:text-slate-500 italic">
+                  появится после первой отправки ботом
+                </span>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

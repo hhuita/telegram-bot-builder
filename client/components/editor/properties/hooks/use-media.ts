@@ -25,6 +25,8 @@ export function useMediaFiles(projectId: number, fileType?: string) {
   return useQuery({
     queryKey: ["/api/media/project", projectId, fileType],
     enabled: !!projectId,
+    /** Автообновление каждые 30 секунд — подхватывает telegram_file_id после первой отправки ботом */
+    refetchInterval: 30_000,
     queryFn: async (): Promise<MediaFile[]> => {
       const id = typeof projectId === 'number' ? projectId : parseInt(projectId as unknown as string);
       const url = fileType
