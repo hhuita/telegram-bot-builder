@@ -186,6 +186,30 @@ export async function handleGenerateCode(req: Request, res: Response): Promise<v
       }
     }
 
+    // Апгрейд: если обложка из ноды уже есть в БД с telegramFileId — используем file_id
+    const thumbUrlsToCheck = Object.values(nodeThumbnailUrls).filter(
+      (url): url is string => typeof url === 'string' && url.startsWith('/uploads/')
+    );
+    if (thumbUrlsToCheck.length > 0) {
+      try {
+        const thumbFilesInDb = await storage.getMediaFilesByUrls(thumbUrlsToCheck, projectId);
+        for (const thumbFile of thumbFilesInDb) {
+          if (!thumbFile.telegramFileId) continue;
+          // Находим videoUrl для этой обложки
+          for (const [videoUrl, thumbUrl] of Object.entries(nodeThumbnailUrls)) {
+            if (thumbUrl === thumbFile.url && !thumbnailFileIds[videoUrl]) {
+              thumbnailFileIds[videoUrl] = thumbFile.telegramFileId;
+              // Убираем из thumbnailUrls — теперь используем file_id
+              delete thumbnailUrls[videoUrl];
+              console.log(`[Generate] Обложка апгрейд до file_id для ${videoUrl.slice(-30)}: ${thumbFile.telegramFileId.slice(0, 20)}...`);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[Generate] Не удалось проверить file_id обложек из нод:', err);
+      }
+    }
+
     if (Object.keys(nodeThumbnailUrls).length > 0) {
       console.log(`[Generate] Fallback обложек из нод: ${Object.keys(nodeThumbnailUrls).length}`);
     }
