@@ -375,6 +375,23 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
                             logging.info(f"💾 file_id сохранён в БД для {{ videoUrl }}")
                     except Exception as _db_err:
                         logging.warning(f"⚠️ Не удалось сохранить file_id в БД: {_db_err}")
+{%- if _vid_thumb_url %}
+                # Сохраняем file_id обложки из ответа Telegram (video.thumbnail.file_id)
+                if _sent_video.video.thumbnail:
+                    _thumb_fid = _sent_video.video.thumbnail.file_id
+                    _media_file_id_cache["{{ _vid_thumb_url }}"] = _thumb_fid
+                    logging.info(f"✅ Узел {{ nodeId }}: получен file_id обложки={_thumb_fid[:20]}... для {{ _vid_thumb_url }}")
+                    if db_pool:
+                        try:
+                            async with db_pool.acquire() as _conn:
+                                await _conn.execute(
+                                    "UPDATE media_files SET telegram_file_id = $1 WHERE url = $2 AND project_id = $3",
+                                    _thumb_fid, "{{ _vid_thumb_url }}", PROJECT_ID
+                                )
+                                logging.info(f"💾 file_id обложки сохранён в БД для {{ _vid_thumb_url }}")
+                        except Exception as _db_err:
+                            logging.warning(f"⚠️ Не удалось сохранить file_id обложки в БД: {_db_err}")
+{%- endif %}
             return _sent_video
 {%- else %}
 {%- set _cached_vid_fid = (telegramFileIds or {})[videoUrl] if telegramFileIds and videoUrl in telegramFileIds else '' %}
@@ -418,6 +435,23 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
                             logging.info(f"💾 file_id сохранён в БД для {{ videoUrl }}")
                     except Exception as _db_err:
                         logging.warning(f"⚠️ Не удалось сохранить file_id в БД: {_db_err}")
+{%- if _vid_thumb_url %}
+                # Сохраняем file_id обложки из ответа Telegram (video.thumbnail.file_id)
+                if _sent_video.video.thumbnail:
+                    _thumb_fid = _sent_video.video.thumbnail.file_id
+                    _media_file_id_cache["{{ _vid_thumb_url }}"] = _thumb_fid
+                    logging.info(f"✅ Узел {{ nodeId }}: получен file_id обложки={_thumb_fid[:20]}... для {{ _vid_thumb_url }}")
+                    if db_pool:
+                        try:
+                            async with db_pool.acquire() as _conn:
+                                await _conn.execute(
+                                    "UPDATE media_files SET telegram_file_id = $1 WHERE url = $2 AND project_id = $3",
+                                    _thumb_fid, "{{ _vid_thumb_url }}", PROJECT_ID
+                                )
+                                logging.info(f"💾 file_id обложки сохранён в БД для {{ _vid_thumb_url }}")
+                        except Exception as _db_err:
+                            logging.warning(f"⚠️ Не удалось сохранить file_id обложки в БД: {_db_err}")
+{%- endif %}
             return _sent_video
 {%- endif %}
 {%- endif %}
