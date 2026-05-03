@@ -81,6 +81,7 @@ export function MultiMediaSelector({
       mediaFileId: dbFile?.id,
       thumbnailMediaId: dbFile?.thumbnailMediaId ?? null,
       thumbnailUrl: thumbnailFile?.url ?? null,
+      thumbnailDirectUrl: dbFile?.thumbnailUrl ?? null,
       projectId: projectId,
     };
   });

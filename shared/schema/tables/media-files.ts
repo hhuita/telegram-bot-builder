@@ -40,6 +40,8 @@ export const mediaFiles = pgTable("media_files", {
   telegramFileId: text("telegram_file_id"),
   /** ID медиафайла-обложки (ссылка на фото из той же таблицы, только для видео) */
   thumbnailMediaId: integer("thumbnail_media_id").references((): AnyPgColumn => mediaFiles.id, { onDelete: "set null" }),
+  /** URL обложки видео (альтернатива thumbnailMediaId — для внешних URL без скачивания) */
+  thumbnailUrl: text("thumbnail_url"),
   /** Дата создания файла */
   createdAt: timestamp("created_at").defaultNow(),
   /** Дата последнего обновления файла */
@@ -75,6 +77,8 @@ export const insertMediaFileSchema = z.object({
   telegramFileId: z.string().nullable().optional(),
   /** ID обложки видео (опционально, только для видео) */
   thumbnailMediaId: z.number().int().nullable().optional(),
+  /** URL обложки видео (строка, без FK) */
+  thumbnailUrl: z.string().nullable().optional(),
 });
 
 /** Тип записи медиафайла */

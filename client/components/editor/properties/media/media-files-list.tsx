@@ -30,6 +30,8 @@ export interface MediaFileData {
   thumbnailMediaId?: number | null;
   /** URL текущей обложки */
   thumbnailUrl?: string | null;
+  /** Прямой URL обложки (из поля thumbnailUrl) */
+  thumbnailDirectUrl?: string | null;
   /** ID проекта (нужен для загрузки фото для выбора обложки) */
   projectId?: number;
 }

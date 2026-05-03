@@ -394,7 +394,7 @@ export function useSearchMedia(projectId: number, query: string) {
 
 /**
  * Хук для установки обложки видео
- * @returns Мутация для обновления thumbnailMediaId
+ * @returns Мутация для обновления thumbnailMediaId и/или thumbnailUrl
  */
 export function useSetThumbnail() {
   const queryClient = useQueryClient();
@@ -402,13 +402,19 @@ export function useSetThumbnail() {
     mutationFn: async ({
       videoId,
       thumbnailId,
+      thumbnailUrl,
     }: {
       /** ID видеофайла */
       videoId: number;
-      /** ID обложки (null — убрать обложку) */
-      thumbnailId: number | null;
+      /** ID обложки через FK (undefined — не менять, null — убрать) */
+      thumbnailId?: number | null;
+      /** Прямой URL обложки (undefined — не менять, null — убрать) */
+      thumbnailUrl?: string | null;
     }): Promise<MediaFile> => {
-      const response = await apiRequest('PUT', `/api/media/${videoId}`, { thumbnailMediaId: thumbnailId });
+      const payload: Record<string, unknown> = {};
+      if (thumbnailId !== undefined) payload.thumbnailMediaId = thumbnailId;
+      if (thumbnailUrl !== undefined) payload.thumbnailUrl = thumbnailUrl;
+      const response = await apiRequest('PUT', `/api/media/${videoId}`, payload);
       if (!response.ok) throw new Error('Ошибка при установке обложки');
       return response.json();
     },
