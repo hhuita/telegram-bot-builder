@@ -2178,26 +2178,36 @@ export async function registerRoutes(app: Express, httpServer?: Server): Promise
 
     const selectSql = `
       SELECT
-        ROW_NUMBER() OVER (ORDER BY last_interaction DESC) AS id,
-        user_id::text AS "userId",
-        username AS "userName",
-        first_name AS "firstName",
-        last_name AS "lastName",
-        avatar_url AS "avatarUrl",
-        registered_at AS "registeredAt",
-        registered_at AS "createdAt",
-        last_interaction AS "lastInteraction",
-        COALESCE(interaction_count, 0)::integer AS "interactionCount",
-        user_data AS "userData",
-        CASE WHEN is_active = 1 THEN TRUE ELSE FALSE END AS "isActive",
+        ROW_NUMBER() OVER (ORDER BY u.last_interaction DESC) AS id,
+        u.user_id::text AS "userId",
+        u.username AS "userName",
+        u.first_name AS "firstName",
+        u.last_name AS "lastName",
+        u.avatar_url AS "avatarUrl",
+        u.registered_at AS "registeredAt",
+        u.registered_at AS "createdAt",
+        u.last_interaction AS "lastInteraction",
+        COALESCE(u.interaction_count, 0)::integer AS "interactionCount",
+        u.user_data AS "userData",
+        CASE WHEN u.is_active = 1 THEN TRUE ELSE FALSE END AS "isActive",
         FALSE AS "isPremium",
         FALSE AS "isBlocked",
-        CASE WHEN is_bot = 1 THEN TRUE ELSE FALSE END AS "isBot"
-      FROM bot_users
-      WHERE is_bot = 0
-        AND project_id = $1
-        AND ($2::integer IS NULL OR token_id = $2)
-      ORDER BY last_interaction DESC
+        CASE WHEN u.is_bot = 1 THEN TRUE ELSE FALSE END AS "isBot",
+        lm.message_text AS "lastMessageText",
+        lm.created_at AS "lastMessageAt"
+      FROM bot_users u
+      LEFT JOIN LATERAL (
+        SELECT message_text, created_at
+        FROM bot_messages
+        WHERE user_id = u.user_id::text
+          AND project_id = u.project_id
+        ORDER BY created_at DESC
+        LIMIT 1
+      ) lm ON true
+      WHERE u.is_bot = 0
+        AND u.project_id = $1
+        AND ($2::integer IS NULL OR u.token_id = $2)
+      ORDER BY u.last_interaction DESC
     `;
 
     try {
