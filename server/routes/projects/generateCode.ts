@@ -92,6 +92,49 @@ export async function handleGenerateCode(req: Request, res: Response): Promise<v
       }
     }
 
+    // Собираем все URL медиафайлов из узлов проекта для получения кэшированных file_id
+    const allNodes: any[] = [];
+    if (Array.isArray(botDataForGenerator.sheets)) {
+      for (const sheet of botDataForGenerator.sheets) {
+        if (Array.isArray(sheet?.nodes)) allNodes.push(...sheet.nodes);
+      }
+    } else if (Array.isArray(botDataForGenerator.nodes)) {
+      allNodes.push(...botDataForGenerator.nodes);
+    }
+
+    const mediaUrls = new Set<string>();
+    for (const node of allNodes) {
+      const data = node?.data;
+      if (!data) continue;
+      // media-нода: attachedMedia
+      if (Array.isArray(data.attachedMedia)) {
+        for (const url of data.attachedMedia) {
+          if (typeof url === 'string' && url.startsWith('/uploads/')) mediaUrls.add(url);
+        }
+      }
+      // message-нода: imageUrl, videoUrl, audioUrl, documentUrl
+      for (const field of ['imageUrl', 'videoUrl', 'audioUrl', 'documentUrl']) {
+        const url = data[field];
+        if (typeof url === 'string' && url.startsWith('/uploads/')) mediaUrls.add(url);
+      }
+    }
+
+    // Получаем кэшированные Telegram file_id из БД
+    const telegramFileIds: Record<string, string> = {};
+    if (mediaUrls.size > 0) {
+      try {
+        const mediaFilesWithIds = await storage.getMediaFilesByUrls(Array.from(mediaUrls), projectId);
+        for (const mf of mediaFilesWithIds) {
+          if (mf.telegramFileId) {
+            telegramFileIds[mf.url] = mf.telegramFileId;
+          }
+        }
+        console.log(`[Generate] Найдено ${Object.keys(telegramFileIds).length} кэшированных file_id из ${mediaUrls.size} URL`);
+      } catch (err) {
+        console.warn('[Generate] Не удалось получить telegramFileIds:', err);
+      }
+    }
+
     // Генерируем код
     const generatePythonCode = await loadGenerator();
     const code = generatePythonCode(botDataForGenerator, {
@@ -100,6 +143,7 @@ export async function handleGenerateCode(req: Request, res: Response): Promise<v
       enableComments,
       enableLogging,
       projectId,
+      telegramFileIds,
     });
 
     // Логирование результата

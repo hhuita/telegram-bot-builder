@@ -417,6 +417,15 @@ export interface IStorage {
   getMediaFilesByType(projectId: number, fileType: string): Promise<MediaFile[]>;
 
   /**
+   * Получить медиафайлы по массиву URL и ID проекта
+   * Используется при генерации кода для получения кэшированных Telegram file_id
+   * @param urls - Массив URL медиафайлов
+   * @param projectId - ID проекта
+   * @returns Массив найденных медиафайлов
+   */
+  getMediaFilesByUrls(urls: string[], projectId: number): Promise<MediaFile[]>;
+
+  /**
    * Создать новый медиафайл
    * @param file - Данные для создания файла
    * @returns Созданный медиафайл

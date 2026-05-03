@@ -735,6 +735,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   /**
+   * Получить медиафайлы по массиву URL и ID проекта из базы данных
+   * @param urls - Массив URL медиафайлов для поиска
+   * @param projectId - ID проекта
+   * @returns Массив найденных медиафайлов с заполненным telegramFileId
+   */
+  async getMediaFilesByUrls(urls: string[], projectId: number): Promise<MediaFile[]> {
+    if (!urls.length) return [];
+    return await this.db.select().from(mediaFiles)
+      .where(and(
+        eq(mediaFiles.projectId, projectId),
+        inArray(mediaFiles.url, urls)
+      ));
+  }
+
+  /**
    * Создать новый медиафайл в базе данных
    * @param insertFile - Данные для создания файла
    * @returns Созданный медиафайл

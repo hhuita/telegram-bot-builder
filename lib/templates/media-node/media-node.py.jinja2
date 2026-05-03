@@ -169,11 +169,11 @@ async def handle_callback_{{ nodeId|safe_name }}(callback_query: types.CallbackQ
         await callback_query.message.answer_document(_resolved_media)
 {%- else %}
 {%- set mtype = get_media_type(url) | trim %}
-{%- set cached_file_id = telegramFileIds[url] if telegramFileIds and url in telegramFileIds else '' %}
+{%- set cached_file_id = (telegramFileIds or {})[url] if telegramFileIds and url in telegramFileIds else '' %}
     # Отправка одиночного медиафайла
 {%- if cached_file_id %}
     # Отправка через кэшированный Telegram file_id (повторная отправка)
-    logging.info(f"📎 Узел {{ nodeId }}: отправка через кэшированный file_id={{ cached_file_id[:20] }}...")
+    logging.info(f"📎 Узел {{ nodeId }}: отправка через кэшированный file_id={{ cached_file_id }}...")
     await callback_query.message.answer_{{ mtype }}("{{ cached_file_id }}")
 {%- elif '/uploads/' in url %}
     _file_path = get_upload_file_path("{{ url }}")

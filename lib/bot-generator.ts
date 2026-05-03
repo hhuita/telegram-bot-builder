@@ -111,6 +111,12 @@ export interface GeneratePythonCodeOptions {
   webhookPort?: number | null;
   /** Сохранять входящие фото от пользователей в БД */
   saveIncomingMedia?: boolean;
+  /**
+   * Словарь кэшированных Telegram file_id для медиафайлов проекта.
+   * Ключ — URL файла (/uploads/...), значение — Telegram file_id.
+   * Передаётся в генератор узлов для статического вшивания в код.
+   */
+  telegramFileIds?: Record<string, string>;
 }
 
 // ---------------------------------------------------------------------------
@@ -162,6 +168,7 @@ function buildGenerationContext(
     webhookUrl = null,
     webhookPort = null,
     saveIncomingMedia = false,
+    telegramFileIds = {},
   } = options;
 
   const genOptions: GenerationOptions = {
@@ -174,6 +181,7 @@ function buildGenerationContext(
     webhookUrl,
     webhookPort,
     saveIncomingMedia,
+    telegramFileIds,
   };
 
   const context = createGenerationContext(botData, botName, groups, genOptions);
@@ -273,7 +281,8 @@ function generateCodeSections(
   const nodeHandlers = generateNodeHandlers(
     nodes,
     userDatabaseEnabled,
-    !!context.options.enableComments
+    !!context.options.enableComments,
+    context.options.telegramFileIds || {}
   );
 
   // --- allReferencedNodeIds (теперь часть контекста секции) ---

@@ -1379,6 +1379,106 @@ test('Q06', 'condition is_not_subscribed → media генерирует вали
   syntax(code, 'q06');
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// БЛОК R: Кэшированные Telegram file_id
+// ─────────────────────────────────────────────────────────────────────────────
+
+console.log('── Блок R: Кэшированные Telegram file_id ─────────────────────────');
+
+function makeMediaNodeWithFileIds(id: string, media: string[], fileIds: Record<string, string>, opts: {
+  enableAutoTransition?: boolean;
+  autoTransitionTo?: string;
+} = {}): any {
+  return {
+    id,
+    type: 'media',
+    position: { x: 0, y: 0 },
+    data: {
+      attachedMedia: media,
+      telegramFileIds: fileIds,
+      enableAutoTransition: opts.enableAutoTransition ?? false,
+      autoTransitionTo: opts.autoTransitionTo ?? '',
+      buttons: [],
+      keyboardType: 'none',
+    },
+  };
+}
+
+test('R01', 'кэшированный file_id используется вместо URL', () => {
+  const p = makeProject([makeMediaNodeWithFileIds('m1',
+    ['https://ex.com/photo.jpg'],
+    { 'https://ex.com/photo.jpg': 'CAACAgQAAxkBAAIC' }
+  )]);
+  const code = gen(p, 'r01');
+  ok(code.includes('CAACAgQAAxkBAAIC'), 'кэшированный file_id должен быть в коде');
+});
+
+test('R02', 'при наличии file_id НЕТ прямого URL в answer_photo', () => {
+  const p = makeProject([makeMediaNodeWithFileIds('m1',
+    ['https://ex.com/photo.jpg'],
+    { 'https://ex.com/photo.jpg': 'CAACAgQAAxkBAAIC' }
+  )]);
+  const code = gen(p, 'r02');
+  ok(!code.includes('"https://ex.com/photo.jpg"'), 'URL не должен быть в answer_photo при наличии file_id');
+});
+
+test('R03', 'без file_id — URL используется напрямую', () => {
+  const p = makeProject([makeMediaNodeWithFileIds('m1',
+    ['https://ex.com/photo.jpg'],
+    {}
+  )]);
+  const code = gen(p, 'r03');
+  ok(code.includes('https://ex.com/photo.jpg'), 'URL должен быть в коде без file_id');
+});
+
+test('R04', 'лог 📎 при отправке через кэшированный file_id', () => {
+  const p = makeProject([makeMediaNodeWithFileIds('m1',
+    ['https://ex.com/photo.jpg'],
+    { 'https://ex.com/photo.jpg': 'CAACAgQAAxkBAAIC' }
+  )]);
+  const code = gen(p, 'r04');
+  ok(code.includes('📎'), 'лог 📎 должен быть при отправке через file_id');
+});
+
+test('R05', 'лог 📤 при первой отправке без file_id', () => {
+  const p = makeProject([makeMediaNodeWithFileIds('m1',
+    ['https://ex.com/photo.jpg'],
+    {}
+  )]);
+  const code = gen(p, 'r05');
+  ok(code.includes('📤'), 'лог 📤 должен быть при первой отправке');
+});
+
+test('R06', 'синтаксис OK с кэшированным file_id', () => {
+  const p = makeProject([makeMediaNodeWithFileIds('m1',
+    ['https://ex.com/photo.jpg'],
+    { 'https://ex.com/photo.jpg': 'CAACAgQAAxkBAAIC' }
+  )]);
+  syntax(gen(p, 'r06'), 'r06');
+});
+
+test('R07', 'синтаксис OK без file_id', () => {
+  const p = makeProject([makeMediaNodeWithFileIds('m1',
+    ['https://ex.com/photo.jpg'],
+    {}
+  )]);
+  syntax(gen(p, 'r07'), 'r07');
+});
+
+test('R08', 'смешанный сценарий: один файл с file_id, другой без', () => {
+  const p = makeProject([makeMediaNodeWithFileIds('m1',
+    ['https://ex.com/a.jpg'],
+    { 'https://ex.com/a.jpg': 'CACHED_ID_001' }
+  ), makeMediaNodeWithFileIds('m2',
+    ['https://ex.com/b.jpg'],
+    {}
+  )]);
+  const code = gen(p, 'r08');
+  ok(code.includes('CACHED_ID_001'), 'кэшированный file_id должен быть для m1');
+  ok(code.includes('https://ex.com/b.jpg'), 'URL должен быть для m2 без file_id');
+  syntax(code, 'r08');
+});
+
 const passed = results.filter(r => r.passed).length;
 const failed = results.filter(r => !r.passed).length;
 const total = results.length;

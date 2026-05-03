@@ -3,7 +3,7 @@
  */
 
 import { type BotGroup, botGroups, type BotInstance, botInstances, type BotProject, botProjects, type BotTemplate, botTemplates, type BotToken, botTokens, type InsertBotGroup, type InsertBotInstance, type InsertBotProject, type InsertBotTemplate, type InsertBotToken, type InsertMediaFile, type InsertUserBotData, type MediaFile, mediaFiles, type UserBotData, userBotData } from "@shared/schema";
-import { and, desc, eq, ilike, or } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { DatabaseStorage } from "./DatabaseStorage";
 
 /**
@@ -512,6 +512,21 @@ export class OptimizedDatabaseStorage extends DatabaseStorage {
     return await this.db.select().from(mediaFiles)
       .where(and(eq(mediaFiles.projectId, projectId), eq(mediaFiles.fileType, fileType)))
       .orderBy(desc(mediaFiles.createdAt));
+  }
+
+  /**
+   * Получить медиафайлы по массиву URL и ID проекта из базы данных
+   * @param urls - Массив URL медиафайлов для поиска
+   * @param projectId - ID проекта
+   * @returns Массив найденных медиафайлов с заполненным telegramFileId
+   */
+  async getMediaFilesByUrls(urls: string[], projectId: number): Promise<MediaFile[]> {
+    if (!urls.length) return [];
+    return await this.db.select().from(mediaFiles)
+      .where(and(
+        eq(mediaFiles.projectId, projectId),
+        inArray(mediaFiles.url, urls)
+      ));
   }
 
   /**

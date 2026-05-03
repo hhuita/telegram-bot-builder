@@ -36,6 +36,11 @@ export interface GenerationOptions {
   webhookPort?: number | null;
   /** Сохранять входящие фото от пользователей в БД */
   saveIncomingMedia?: boolean;
+  /**
+   * Словарь кэшированных Telegram file_id для медиафайлов.
+   * Ключ — URL файла, значение — Telegram file_id.
+   */
+  telegramFileIds?: Record<string, string>;
 }
 
 /**

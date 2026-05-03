@@ -177,13 +177,20 @@ function generateCommandEntryHandler(node: Node, callbackHandlerCode: string): s
  *
  * @param nodes - Массив узлов для генерации обработчиков
  * @param userDatabaseEnabled - Флаг, указывающий, включена ли база данных пользователей
+ * @param enableComments - Включить автоматические комментарии в коде
+ * @param telegramFileIds - Словарь кэшированных Telegram file_id (ключ — URL, значение — file_id)
  * @returns Сгенерированный код обработчиков узлов
  *
  * @example
  * const nodes = [{ id: 'welcome', type: 'message' }, { id: 'help-trigger', type: 'command_trigger' }];
  * const code = generateNodeHandlers(nodes, true, true);
  */
-export function generateNodeHandlers(nodes: Node[], userDatabaseEnabled: boolean, enableComments: boolean = true): string {
+export function generateNodeHandlers(
+  nodes: Node[],
+  userDatabaseEnabled: boolean,
+  enableComments: boolean = true,
+  telegramFileIds: Record<string, string> = {}
+): string {
   // Собираем код в массив строк
   const codeLines: string[] = [];
 
@@ -253,7 +260,7 @@ export function generateNodeHandlers(nodes: Node[], userDatabaseEnabled: boolean
         saveMessageIdTo: (node.data as any)?.saveMessageIdTo || undefined,
         enableDynamicButtons: node.data?.enableDynamicButtons ?? false,
         dynamicButtons: node.data?.dynamicButtons as DynamicButtonsConfig | undefined,
-        telegramFileIds: (node.data as any)?.telegramFileIds || {},
+        telegramFileIds: { ...(telegramFileIds || {}), ...((node.data as any)?.telegramFileIds || {}) },
       };
   };
 
@@ -321,7 +328,7 @@ export function generateNodeHandlers(nodes: Node[], userDatabaseEnabled: boolean
       /** Список получателей медиа-сообщения */
       messageSendRecipients: (node.data as any)?.messageSendRecipients || [],
       /** Кэшированные Telegram file_id для медиафайлов узла */
-      telegramFileIds: (node.data as any)?.telegramFileIds || {},
+      telegramFileIds: { ...(telegramFileIds || {}), ...((node.data as any)?.telegramFileIds || {}) },
     }),
   };
 
