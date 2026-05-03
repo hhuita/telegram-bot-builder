@@ -15,6 +15,7 @@ import { Upload, X } from "lucide-react";
 import { MediaManager } from "./media-manager";
 import { apiRequest } from "@/queryClient";
 import type { MediaFile } from "@shared/schema";
+import { validateThumbnailUrl, validateThumbnailFile } from "./use-thumbnail-validation";
 
 /** Пропсы компонента ThumbnailSelector */
 export interface ThumbnailSelectorProps {
@@ -48,6 +49,10 @@ export function ThumbnailSelector({
   const [isOpen, setIsOpen] = useState(false);
   /** URL из поля ввода */
   const [urlInput, setUrlInput] = useState("");
+  /** Предупреждения валидации (не блокируют применение) */
+  const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
+  /** Ошибки валидации (блокируют кнопку ОК) */
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   /** URL для превью */
   const previewUrl = currentThumbnailUrl;
@@ -67,17 +72,31 @@ export function ThumbnailSelector({
     }
   };
 
-  /** URL для превью */
-  const previewUrl = currentThumbnailUrl;
-  /** Показывать кнопку «Убрать» если есть обложка */
-  const hasThumbnail = !!currentThumbnailUrl;
+  /**
+   * Обрабатывает изменение поля URL — запускает валидацию по расширению.
+   * @param url - Введённый URL
+   */
+  const handleUrlChange = (url: string) => {
+    setUrlInput(url);
+    if (url.trim()) {
+      const result = validateThumbnailUrl(url.trim());
+      setValidationWarnings(result.warnings);
+      setValidationErrors(result.errors);
+    } else {
+      setValidationWarnings([]);
+      setValidationErrors([]);
+    }
+  };
 
   /**
-   * Устанавливает обложку по объекту MediaFile — берёт URL файла.
+   * Устанавливает обложку по объекту MediaFile — берёт URL файла и валидирует.
    * Сбрасывает telegramFileId видео чтобы Telegram принял обложку при следующей отправке.
    * @param file - Выбранный медиафайл
    */
   const handleSelectFile = async (file: MediaFile) => {
+    const result = validateThumbnailUrl(file.url);
+    setValidationWarnings(result.warnings);
+    setValidationErrors(result.errors);
     await resetVideoFileId();
     onThumbnailSet?.(file.url);
     setIsOpen(false);
@@ -89,17 +108,21 @@ export function ThumbnailSelector({
    */
   const handleApplyUrl = async () => {
     const trimmed = urlInput.trim();
-    if (!trimmed) return;
+    if (!trimmed || validationErrors.length > 0) return;
     await resetVideoFileId();
     onThumbnailSet?.(trimmed);
     setUrlInput("");
+    setValidationWarnings([]);
+    setValidationErrors([]);
   };
 
   /**
-   * Убирает обложку
+   * Убирает обложку и сбрасывает состояние валидации
    */
   const handleRemove = () => {
     onThumbnailSet?.(null);
+    setValidationWarnings([]);
+    setValidationErrors([]);
   };
 
   return (
@@ -147,7 +170,7 @@ export function ThumbnailSelector({
       <div className="flex gap-2">
         <Input
           value={urlInput}
-          onChange={(e) => setUrlInput(e.target.value)}
+          onChange={(e) => handleUrlChange(e.target.value)}
           placeholder="URL фото обложки"
           className="h-8 text-xs flex-1"
           onKeyDown={(e) => e.key === "Enter" && handleApplyUrl()}
@@ -156,11 +179,37 @@ export function ThumbnailSelector({
           size="sm"
           variant="outline"
           onClick={handleApplyUrl}
-          disabled={!urlInput.trim()}
+          disabled={!urlInput.trim() || validationErrors.length > 0}
           className="h-8 px-2 text-xs shrink-0"
         >
           ОК
         </Button>
+      </div>
+
+      {/* Блок ошибок валидации — блокируют применение */}
+      {validationErrors.length > 0 && (
+        <div className="rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-2 py-1.5 space-y-0.5">
+          {validationErrors.map((err, i) => (
+            <p key={i} className="text-xs text-red-600 dark:text-red-400">❌ {err}</p>
+          ))}
+        </div>
+      )}
+
+      {/* Блок предупреждений валидации — не блокируют */}
+      {validationWarnings.length > 0 && validationErrors.length === 0 && (
+        <div className="rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-2 py-1.5 space-y-0.5">
+          {validationWarnings.map((warn, i) => (
+            <p key={i} className="text-xs text-amber-700 dark:text-amber-300">⚠️ {warn}</p>
+          ))}
+        </div>
+      )}
+
+      {/* Информационный блок с требованиями Telegram */}
+      <div className="rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 px-2 py-1.5">
+        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+          ℹ️ Требования Telegram: JPEG, до 200 KB, до 320×320 px.<br />
+          Для видео &lt; 10 MB Telegram генерирует превью автоматически.
+        </p>
       </div>
 
       {/* Кнопка открытия MediaManager */}
