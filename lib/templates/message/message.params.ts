@@ -104,6 +104,12 @@ export interface MessageTemplateParams {
   // --- Медиа ---
   /** URL изображения */
   imageUrl?: string;
+  /**
+   * Словарь кэшированных Telegram file_id для медиафайлов сообщения.
+   * Ключ — URL или путь медиафайла, значение — Telegram file_id.
+   * Если для URL есть file_id — отправляем через него напрямую.
+   */
+  telegramFileIds?: Record<string, string>;
   /** URL документа */
   documentUrl?: string;
   /** URL видео */

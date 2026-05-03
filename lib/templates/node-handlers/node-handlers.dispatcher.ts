@@ -253,6 +253,7 @@ export function generateNodeHandlers(nodes: Node[], userDatabaseEnabled: boolean
         saveMessageIdTo: (node.data as any)?.saveMessageIdTo || undefined,
         enableDynamicButtons: node.data?.enableDynamicButtons ?? false,
         dynamicButtons: node.data?.dynamicButtons as DynamicButtonsConfig | undefined,
+        telegramFileIds: (node.data as any)?.telegramFileIds || {},
       };
   };
 

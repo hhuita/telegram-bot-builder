@@ -81,6 +81,11 @@ export const messageParamsSchema = z.object({
   // --- Медиа ---
   /** URL изображения */
   imageUrl: z.string().optional(),
+  /**
+   * Словарь кэшированных Telegram file_id для медиафайлов сообщения.
+   * Ключ — URL или путь медиафайла, значение — Telegram file_id.
+   */
+  telegramFileIds: z.record(z.string(), z.string()).optional().default({}),
   /** URL документа */
   documentUrl: z.string().optional(),
   /** URL видео */

@@ -273,7 +273,18 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
                 logging.warning(f"⚠️ Не удалось разрешить переменную imageUrl: {{ imageUrl | replace('{', '{{') | replace('}', '}}') }} (узел {{ nodeId }})")
                 return await _b.send_message(_target_chat_id, text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
 {%- else %}
-            return await _b.send_photo(_target_chat_id, "{{ imageUrl }}", caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
+{%- set _cached_img_fid = telegramFileIds[imageUrl] if telegramFileIds and imageUrl in telegramFileIds else '' %}
+{%- if _cached_img_fid %}
+            logging.info(f"📎 Узел {{ nodeId }}: отправка фото через кэшированный file_id={{ _cached_img_fid[:20] }}...")
+            return await _b.send_photo(_target_chat_id, "{{ _cached_img_fid }}", caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
+{%- else %}
+            logging.info(f"📤 Узел {{ nodeId }}: первая отправка фото по URL, file_id будет получен из ответа")
+            _sent_photo = await _b.send_photo(_target_chat_id, "{{ imageUrl }}", caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
+            if _sent_photo and _sent_photo.photo:
+                _new_fid = _sent_photo.photo[-1].file_id
+                logging.info(f"✅ Узел {{ nodeId }}: получен file_id={_new_fid[:20]}... для фото {{ imageUrl }}")
+            return _sent_photo
+{%- endif %}
 {%- endif %}
 {%- elif videoUrl %}
 {%- if isLocalVideoUrl %}
@@ -283,7 +294,18 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
                 return await _b.send_message(_target_chat_id, text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
             return await _b.send_video(_target_chat_id, FSInputFile(video_path), caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
 {%- else %}
-            return await _b.send_video(_target_chat_id, "{{ videoUrl }}", caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
+{%- set _cached_vid_fid = telegramFileIds[videoUrl] if telegramFileIds and videoUrl in telegramFileIds else '' %}
+{%- if _cached_vid_fid %}
+            logging.info(f"📎 Узел {{ nodeId }}: отправка видео через кэшированный file_id={{ _cached_vid_fid[:20] }}...")
+            return await _b.send_video(_target_chat_id, "{{ _cached_vid_fid }}", caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
+{%- else %}
+            logging.info(f"📤 Узел {{ nodeId }}: первая отправка видео по URL, file_id будет получен из ответа")
+            _sent_video = await _b.send_video(_target_chat_id, "{{ videoUrl }}", caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
+            if _sent_video and _sent_video.video:
+                _new_fid = _sent_video.video.file_id
+                logging.info(f"✅ Узел {{ nodeId }}: получен file_id={_new_fid[:20]}... для видео {{ videoUrl }}")
+            return _sent_video
+{%- endif %}
 {%- endif %}
 {%- elif audioUrl %}
 {%- if isLocalAudioUrl %}
@@ -293,7 +315,18 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
                 return await _b.send_message(_target_chat_id, text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
             return await _b.send_audio(_target_chat_id, FSInputFile(audio_path), caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
 {%- else %}
-            return await _b.send_audio(_target_chat_id, "{{ audioUrl }}", caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
+{%- set _cached_aud_fid = telegramFileIds[audioUrl] if telegramFileIds and audioUrl in telegramFileIds else '' %}
+{%- if _cached_aud_fid %}
+            logging.info(f"📎 Узел {{ nodeId }}: отправка аудио через кэшированный file_id={{ _cached_aud_fid[:20] }}...")
+            return await _b.send_audio(_target_chat_id, "{{ _cached_aud_fid }}", caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
+{%- else %}
+            logging.info(f"📤 Узел {{ nodeId }}: первая отправка аудио по URL, file_id будет получен из ответа")
+            _sent_audio = await _b.send_audio(_target_chat_id, "{{ audioUrl }}", caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
+            if _sent_audio and _sent_audio.audio:
+                _new_fid = _sent_audio.audio.file_id
+                logging.info(f"✅ Узел {{ nodeId }}: получен file_id={_new_fid[:20]}... для аудио {{ audioUrl }}")
+            return _sent_audio
+{%- endif %}
 {%- endif %}
 {%- elif documentUrl %}
 {%- if isLocalDocumentUrl %}
@@ -303,7 +336,18 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
                 return await _b.send_message(_target_chat_id, text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
             return await _b.send_document(_target_chat_id, FSInputFile(doc_path), caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
 {%- else %}
-            return await _b.send_document(_target_chat_id, "{{ documentUrl }}", caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
+{%- set _cached_doc_fid = telegramFileIds[documentUrl] if telegramFileIds and documentUrl in telegramFileIds else '' %}
+{%- if _cached_doc_fid %}
+            logging.info(f"📎 Узел {{ nodeId }}: отправка документа через кэшированный file_id={{ _cached_doc_fid[:20] }}...")
+            return await _b.send_document(_target_chat_id, "{{ _cached_doc_fid }}", caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
+{%- else %}
+            logging.info(f"📤 Узел {{ nodeId }}: первая отправка документа по URL, file_id будет получен из ответа")
+            _sent_doc = await _b.send_document(_target_chat_id, "{{ documentUrl }}", caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
+            if _sent_doc and _sent_doc.document:
+                _new_fid = _sent_doc.document.file_id
+                logging.info(f"✅ Узел {{ nodeId }}: получен file_id={_new_fid[:20]}... для документа {{ documentUrl }}")
+            return _sent_doc
+{%- endif %}
 {%- endif %}
 {%- else %}
             return await _b.send_message(_target_chat_id, text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
