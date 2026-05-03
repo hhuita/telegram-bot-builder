@@ -157,6 +157,25 @@ export async function handleGenerateCode(req: Request, res: Response): Promise<v
       }
     }
 
+    // Собираем прямые URL обложек (thumbnailUrl — строка без FK)
+    const thumbnailUrls: Record<string, string> = {};
+    if (mediaUrls.size > 0) {
+      try {
+        const mediaFilesWithIds = await storage.getMediaFilesByUrls(Array.from(mediaUrls), projectId);
+        for (const mf of mediaFilesWithIds) {
+          if (mf.thumbnailUrl && !thumbnailFileIds[mf.url]) {
+            // Используем прямой URL только если нет file_id обложки
+            thumbnailUrls[mf.url] = mf.thumbnailUrl;
+          }
+        }
+        if (Object.keys(thumbnailUrls).length > 0) {
+          console.log(`[Generate] Найдено ${Object.keys(thumbnailUrls).length} прямых URL обложек`);
+        }
+      } catch (err) {
+        console.warn('[Generate] Не удалось получить thumbnailUrls:', err);
+      }
+    }
+
     // Генерируем код
     const generatePythonCode = await loadGenerator();
     const code = generatePythonCode(botDataForGenerator, {
@@ -167,6 +186,7 @@ export async function handleGenerateCode(req: Request, res: Response): Promise<v
       projectId,
       telegramFileIds,
       thumbnailFileIds,
+      thumbnailUrls,
     });
 
     // Логирование результата

@@ -122,6 +122,10 @@ export interface GeneratePythonCodeOptions {
    * Передаётся как thumbnail= в send_video / answer_video.
    */
   thumbnailFileIds?: Record<string, string>;
+  /**
+   * Словарь прямых URL обложек видео: ключ — URL видео, значение — URL обложки.
+   */
+  thumbnailUrls?: Record<string, string>;
 }
 
 // ---------------------------------------------------------------------------
@@ -175,6 +179,7 @@ function buildGenerationContext(
     saveIncomingMedia = false,
     telegramFileIds = {},
     thumbnailFileIds = {},
+    thumbnailUrls = {},
   } = options;
 
   const genOptions: GenerationOptions = {
@@ -189,6 +194,7 @@ function buildGenerationContext(
     saveIncomingMedia,
     telegramFileIds,
     thumbnailFileIds,
+    thumbnailUrls,
   };
 
   const context = createGenerationContext(botData, botName, groups, genOptions);
@@ -290,7 +296,8 @@ function generateCodeSections(
     userDatabaseEnabled,
     !!context.options.enableComments,
     context.options.telegramFileIds || {},
-    context.options.thumbnailFileIds || {}
+    context.options.thumbnailFileIds || {},
+    context.options.thumbnailUrls || {}
   );
 
   // --- allReferencedNodeIds (теперь часть контекста секции) ---

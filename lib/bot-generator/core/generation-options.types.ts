@@ -46,6 +46,12 @@ export interface GenerationOptions {
    * Если для видео есть обложка — передаётся как thumbnail= в send_video.
    */
   thumbnailFileIds?: Record<string, string>;
+  /**
+   * Словарь прямых URL обложек видео: ключ — URL видео, значение — URL обложки.
+   * Используется если обложка задана как строка (без FK на media_files).
+   * Приоритет: thumbnailFileIds > thumbnailUrls.
+   */
+  thumbnailUrls?: Record<string, string>;
 }
 
 /**
@@ -64,6 +70,9 @@ export const DEFAULT_GENERATION_OPTIONS: Required<GenerationOptions> = {
   webhookUrl: null,
   webhookPort: null,
   saveIncomingMedia: false,
+  telegramFileIds: {},
+  thumbnailFileIds: {},
+  thumbnailUrls: {},
 } as const;
 
 /**

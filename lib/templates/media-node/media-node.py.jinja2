@@ -171,7 +171,17 @@ async def handle_callback_{{ nodeId|safe_name }}(callback_query: types.CallbackQ
 {%- set mtype = get_media_type(url) | trim %}
 {%- set cached_file_id = (telegramFileIds or {})[url] if telegramFileIds and url in telegramFileIds else '' %}
 {%- set _thumb_fid = (thumbnailFileIds or {})[url] if thumbnailFileIds and url in thumbnailFileIds else '' %}
-{%- set _thumb_arg = ', thumbnail="' + _thumb_fid + '"' if (_thumb_fid and mtype == 'video') else '' %}
+{%- set _thumb_url = (thumbnailUrls or {})[url] if thumbnailUrls and url in thumbnailUrls else '' %}
+{%- set _thumb_val = _thumb_fid or _thumb_url %}
+{%- if _thumb_val and mtype == 'video' %}
+  {%- if '/uploads/' in _thumb_val %}
+    {%- set _thumb_arg = ', thumbnail=FSInputFile(get_upload_file_path("' + _thumb_val + '"))' %}
+  {%- else %}
+    {%- set _thumb_arg = ', thumbnail="' + _thumb_val + '"' %}
+  {%- endif %}
+{%- else %}
+  {%- set _thumb_arg = '' %}
+{%- endif %}
     # Отправка одиночного медиафайла
 {%- if cached_file_id %}
     # Отправка через кэшированный Telegram file_id (повторная отправка)
@@ -188,6 +198,9 @@ async def handle_callback_{{ nodeId|safe_name }}(callback_query: types.CallbackQ
         await callback_query.message.answer_{{ mtype }}(_cached_fid{{ _thumb_arg }})
     else:
         logging.info(f"📤 Узел {{ nodeId }}: первая отправка файла через FSInputFile, file_id будет получен из ответа")
+{%- if _thumb_val and mtype == 'video' %}
+        logging.info(f"🖼 Узел {{ nodeId }}: обложка видео — {{ 'FSInputFile' if '/uploads/' in _thumb_val else ('file_id' if _thumb_fid else 'URL') }}")
+{%- endif %}
         _media_file = FSInputFile(_file_path)
         _sent_msg = await callback_query.message.answer_{{ mtype }}(_media_file{{ _thumb_arg }})
         _new_file_id = _extract_file_id_from_message(_sent_msg, "{{ mtype }}")
@@ -206,6 +219,9 @@ async def handle_callback_{{ nodeId|safe_name }}(callback_query: types.CallbackQ
                     logging.warning(f"⚠️ Не удалось сохранить file_id в БД: {_db_err}")
 {%- else %}
     logging.info(f"📤 Узел {{ nodeId }}: первая отправка файла по URL, file_id будет получен из ответа")
+{%- if _thumb_val and mtype == 'video' %}
+    logging.info(f"🖼 Узел {{ nodeId }}: обложка видео — {{ 'FSInputFile' if '/uploads/' in _thumb_val else ('file_id' if _thumb_fid else 'URL') }}")
+{%- endif %}
     _sent_msg = await callback_query.message.answer_{{ mtype }}("{{ url|e }}"{{ _thumb_arg }})
     _new_file_id = _extract_file_id_from_message(_sent_msg, "{{ mtype }}")
     if _new_file_id:

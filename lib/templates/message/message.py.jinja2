@@ -322,8 +322,18 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
 {%- endif %}
 {%- endif %}
 {%- elif videoUrl %}
-{%- set _vid_thumb = (thumbnailFileIds or {})[videoUrl] if thumbnailFileIds and videoUrl in thumbnailFileIds else '' %}
-{%- set _vid_thumb_arg = ', thumbnail="' + _vid_thumb + '"' if _vid_thumb else '' %}
+{%- set _vid_thumb_fid = (thumbnailFileIds or {})[videoUrl] if thumbnailFileIds and videoUrl in thumbnailFileIds else '' %}
+{%- set _vid_thumb_url = (thumbnailUrls or {})[videoUrl] if thumbnailUrls and videoUrl in thumbnailUrls else '' %}
+{%- set _vid_thumb_val = _vid_thumb_fid or _vid_thumb_url %}
+{%- if _vid_thumb_val %}
+  {%- if '/uploads/' in _vid_thumb_val %}
+    {%- set _vid_thumb_arg = ', thumbnail=FSInputFile(get_upload_file_path("' + _vid_thumb_val + '"))' %}
+  {%- else %}
+    {%- set _vid_thumb_arg = ', thumbnail="' + _vid_thumb_val + '"' %}
+  {%- endif %}
+{%- else %}
+  {%- set _vid_thumb_arg = '' %}
+{%- endif %}
 {%- if isLocalVideoUrl %}
             video_path = get_upload_file_path("{{ videoUrl }}")
             if not os.path.exists(video_path):
@@ -334,6 +344,13 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
                 logging.info(f"📎 Узел {{ nodeId }}: отправка видео через in-memory file_id (без перегенерации)")
                 return await _b.send_video(_target_chat_id, _cached_fid, caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id{{ _vid_thumb_arg }})
             logging.info(f"📤 Узел {{ nodeId }}: отправка видео через FSInputFile")
+{%- if _vid_thumb_fid %}
+            logging.info(f"🖼 Узел {{ nodeId }}: обложка через file_id={{ _vid_thumb_fid[:20] }}...")
+{%- elif _vid_thumb_url and '/uploads/' in _vid_thumb_url %}
+            logging.info(f"🖼 Узел {{ nodeId }}: обложка через FSInputFile={{ _vid_thumb_url }}")
+{%- elif _vid_thumb_url %}
+            logging.info(f"🖼 Узел {{ nodeId }}: обложка через URL={{ _vid_thumb_url }}")
+{%- endif %}
             _sent_video = await _b.send_video(_target_chat_id, FSInputFile(video_path), caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id{{ _vid_thumb_arg }})
             if _sent_video and _sent_video.video:
                 _new_fid = _sent_video.video.file_id
@@ -361,6 +378,13 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
                 logging.info(f"📎 Узел {{ nodeId }}: отправка видео через in-memory file_id (без перегенерации)")
                 return await _b.send_video(_target_chat_id, _rt_fid, caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id{{ _vid_thumb_arg }})
             logging.info(f"📤 Узел {{ nodeId }}: первая отправка видео по URL, file_id будет получен из ответа")
+{%- if _vid_thumb_fid %}
+            logging.info(f"🖼 Узел {{ nodeId }}: обложка через file_id={{ _vid_thumb_fid[:20] }}...")
+{%- elif _vid_thumb_url and '/uploads/' in _vid_thumb_url %}
+            logging.info(f"🖼 Узел {{ nodeId }}: обложка через FSInputFile={{ _vid_thumb_url }}")
+{%- elif _vid_thumb_url %}
+            logging.info(f"🖼 Узел {{ nodeId }}: обложка через URL={{ _vid_thumb_url }}")
+{%- endif %}
             _sent_video = await _b.send_video(_target_chat_id, "{{ videoUrl }}", caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id{{ _vid_thumb_arg }})
             if _sent_video and _sent_video.video:
                 _new_fid = _sent_video.video.file_id

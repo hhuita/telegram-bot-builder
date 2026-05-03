@@ -45,4 +45,9 @@ export interface MediaNodeTemplateParams {
    * Передаётся как thumbnail= в answer_video при первой отправке.
    */
   thumbnailFileIds?: Record<string, string>;
+  /**
+   * Словарь прямых URL обложек видео: ключ — URL видео, значение — URL обложки.
+   * Используется если thumbnailFileIds не содержит file_id для данного видео.
+   */
+  thumbnailUrls?: Record<string, string>;
 }

@@ -91,6 +91,11 @@ export const messageParamsSchema = z.object({
    * Передаётся как thumbnail= в send_video при первой отправке.
    */
   thumbnailFileIds: z.record(z.string(), z.string()).optional().default({}),
+  /**
+   * Словарь прямых URL обложек видео: ключ — URL видео, значение — URL обложки.
+   * Используется если thumbnailFileIds не содержит file_id для данного видео.
+   */
+  thumbnailUrls: z.record(z.string(), z.string()).optional().default({}),
   /** URL документа */
   documentUrl: z.string().optional(),
   /** URL видео */

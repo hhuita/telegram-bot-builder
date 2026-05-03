@@ -125,5 +125,6 @@ export function generateMessage(params: MessageTemplateParams): string {
     staticRowsBefore: staticRowsAroundDynamic.staticRowsBefore,
     staticRowsAfter: staticRowsAroundDynamic.staticRowsAfter,
     thumbnailFileIds: params.thumbnailFileIds || {},
+    thumbnailUrls: params.thumbnailUrls || {},
   });
 }
