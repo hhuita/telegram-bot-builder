@@ -4,6 +4,7 @@
  * Отображает информацию о файле с кнопками просмотра и удаления.
  * Поддерживает переменные вида {var.path} — показывает иконку вместо img.
  * Показывает кэшированный Telegram file_id если он есть.
+ * Для видео — отображает блок выбора обложки.
  *
  * @module MediaFileCard
  */
@@ -12,6 +13,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Eye, X, Copy, Check } from "lucide-react";
+import { ThumbnailSelector } from "./thumbnail-selector";
 
 /**
  * Проверяет, является ли строка переменной вида {var.path}
@@ -24,16 +26,32 @@ function isVariablePlaceholder(url: string): boolean {
 
 /** Пропсы компонента MediaFileCard */
 export interface MediaFileCardProps {
+  /** URL файла */
   url: string;
+  /** Имя файла */
   fileName: string;
+  /** Тип файла */
   fileType: string;
+  /** Описание файла */
   description?: string;
+  /** Теги файла */
   tags?: string[];
   /** Кэшированный Telegram file_id (появляется после первой отправки ботом) */
   telegramFileId?: string | null;
+  /** Callback для предпросмотра */
   onPreview?: () => void;
+  /** Callback для удаления */
   onRemove?: () => void;
+  /** Флаг скрытого файла */
   isHidden?: boolean;
+  /** ID видеофайла в БД (нужен для установки обложки) */
+  mediaFileId?: number;
+  /** ID текущей обложки */
+  thumbnailMediaId?: number | null;
+  /** URL текущей обложки */
+  thumbnailUrl?: string | null;
+  /** ID проекта (нужен для загрузки фото для выбора обложки) */
+  projectId?: number;
 }
 
 /** Иконка для типа файла */
@@ -60,7 +78,11 @@ export function MediaFileCard({
   telegramFileId,
   onPreview,
   onRemove,
-  isHidden = false
+  isHidden = false,
+  mediaFileId,
+  thumbnailMediaId,
+  thumbnailUrl,
+  projectId,
 }: MediaFileCardProps) {
   /** Флаг успешного копирования file_id */
   const [copied, setCopied] = useState(false);
@@ -197,6 +219,18 @@ export function MediaFileCard({
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Выбор обложки для видео */}
+      {fileType === 'video' && mediaFileId && projectId && (
+        <div className="mt-2">
+          <ThumbnailSelector
+            videoFileId={mediaFileId}
+            currentThumbnailId={thumbnailMediaId ?? null}
+            currentThumbnailUrl={thumbnailUrl}
+            projectId={projectId}
+          />
         </div>
       )}
     </div>

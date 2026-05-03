@@ -10,14 +10,28 @@ import { MediaFileCard } from "./media-file-card";
 
 /** Данные медиафайла */
 export interface MediaFileData {
+  /** URL файла */
   url: string;
+  /** Имя файла */
   fileName: string;
+  /** Тип файла */
   fileType: string;
+  /** Описание файла */
   description?: string;
+  /** Теги файла */
   tags?: string[];
   /** Кэшированный Telegram file_id (появляется после первой отправки ботом) */
   telegramFileId?: string | null;
+  /** Флаг скрытого файла */
   isHidden?: boolean;
+  /** ID видеофайла в БД (нужен для установки обложки) */
+  mediaFileId?: number;
+  /** ID текущей обложки */
+  thumbnailMediaId?: number | null;
+  /** URL текущей обложки */
+  thumbnailUrl?: string | null;
+  /** ID проекта (нужен для загрузки фото для выбора обложки) */
+  projectId?: number;
 }
 
 /** Пропсы списка файлов */

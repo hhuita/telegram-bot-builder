@@ -391,3 +391,29 @@ export function useSearchMedia(projectId: number, query: string) {
     enabled: !!query.trim() && !!projectId && typeof projectId === 'number',
   });
 }
+
+/**
+ * Хук для установки обложки видео
+ * @returns Мутация для обновления thumbnailMediaId
+ */
+export function useSetThumbnail() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      videoId,
+      thumbnailId,
+    }: {
+      /** ID видеофайла */
+      videoId: number;
+      /** ID обложки (null — убрать обложку) */
+      thumbnailId: number | null;
+    }): Promise<MediaFile> => {
+      const response = await apiRequest('PUT', `/api/media/${videoId}`, { thumbnailMediaId: thumbnailId });
+      if (!response.ok) throw new Error('Ошибка при установке обложки');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/media/project"], exact: false });
+    },
+  });
+}

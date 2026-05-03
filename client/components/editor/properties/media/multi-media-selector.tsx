@@ -68,12 +68,20 @@ export function MultiMediaSelector({
   /** Формируем массив файлов с реальными именами и типами из БД (если доступны) */
   const files: MediaFileData[] = value.map((url, index) => {
     const dbFile = dbFileByUrl.get(url);
+    /** Запись обложки — ищем по thumbnailMediaId в списке всех файлов проекта */
+    const thumbnailFile = dbFile?.thumbnailMediaId
+      ? dbFiles?.find((f) => f.id === dbFile.thumbnailMediaId)
+      : undefined;
     return {
       url,
       fileName: dbFile?.fileName ?? `Файл ${index + 1}`,
       fileType: dbFile?.fileType ?? getMediaTypeByUrl(url),
       telegramFileId: dbFile?.telegramFileId ?? null,
       isHidden: hasKeyboard && index > 0,
+      mediaFileId: dbFile?.id,
+      thumbnailMediaId: dbFile?.thumbnailMediaId ?? null,
+      thumbnailUrl: thumbnailFile?.url ?? null,
+      projectId: projectId,
     };
   });
 
