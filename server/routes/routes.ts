@@ -2205,7 +2205,6 @@ export async function registerRoutes(app: Express, httpServer?: Server): Promise
         u.registered_at AS "createdAt",
         u.last_interaction AS "lastInteraction",
         COALESCE(u.interaction_count, 0)::integer AS "interactionCount",
-        u.user_data AS "userData",
         CASE WHEN u.is_active = 1 THEN TRUE ELSE FALSE END AS "isActive",
         FALSE AS "isPremium",
         FALSE AS "isBlocked",
