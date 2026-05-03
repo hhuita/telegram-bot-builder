@@ -229,13 +229,10 @@ export function MediaFileCard({
       )}
 
       {/* Выбор обложки для видео */}
-      {fileType === 'video' && mediaFileId && projectId && (
+      {fileType === 'video' && projectId && (
         <div className="mt-2">
           <ThumbnailSelector
-            videoFileId={mediaFileId}
-            currentThumbnailId={thumbnailMediaId ?? null}
             currentThumbnailUrl={thumbnailUrl}
-            currentThumbnailDirectUrl={thumbnailDirectUrl}
             projectId={projectId}
             onThumbnailSet={(thumbUrl) => onThumbnailSet?.(url, thumbUrl)}
           />

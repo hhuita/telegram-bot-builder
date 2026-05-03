@@ -74,10 +74,6 @@ export function MultiMediaSelector({
   /** Формируем массив файлов с реальными именами и типами из БД (если доступны) */
   const files: MediaFileData[] = value.map((url, index) => {
     const dbFile = dbFileByUrl.get(url);
-    /** Запись обложки — ищем по thumbnailMediaId в списке всех файлов проекта */
-    const thumbnailFile = dbFile?.thumbnailMediaId
-      ? dbFiles?.find((f) => f.id === dbFile.thumbnailMediaId)
-      : undefined;
     return {
       url,
       fileName: dbFile?.fileName ?? `Файл ${index + 1}`,
@@ -85,9 +81,10 @@ export function MultiMediaSelector({
       telegramFileId: dbFile?.telegramFileId ?? null,
       isHidden: hasKeyboard && index > 0,
       mediaFileId: dbFile?.id,
-      thumbnailMediaId: dbFile?.thumbnailMediaId ?? null,
-      thumbnailUrl: thumbnailFile?.url ?? null,
-      thumbnailDirectUrl: dbFile?.thumbnailUrl ?? null,
+      thumbnailMediaId: null,
+      /** Обложка берётся из ноды project.json (thumbnailsMap), не из БД */
+      thumbnailUrl: thumbnailsMap[url] ?? null,
+      thumbnailDirectUrl: null,
       projectId: projectId,
     };
   });

@@ -2,7 +2,7 @@
  * @fileoverview Компонент выбора обложки для видеофайла
  *
  * Встроенный блок без диалога — поле URL и кнопка открытия MediaManager.
- * Поддерживает два способа хранения обложки: FK на media_files или прямой URL.
+ * Обложка сохраняется только в ноду project.json (attachedMediaThumbnails) — без запросов к БД.
  *
  * @module media/thumbnail-selector
  */
@@ -12,40 +12,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Upload, X } from "lucide-react";
-import { useMediaFiles, useSetThumbnail } from "../hooks/use-media";
 import { MediaManager } from "./media-manager";
 import type { MediaFile } from "@shared/schema";
 
 /** Пропсы компонента ThumbnailSelector */
 export interface ThumbnailSelectorProps {
-  /** ID видеофайла для которого выбирается обложка */
-  videoFileId: number;
-  /** ID текущей обложки (null если нет) */
-  currentThumbnailId: number | null;
-  /** URL текущей обложки (из FK на media_files) */
+  /** Текущий URL обложки (из ноды project.json) */
   currentThumbnailUrl?: string | null;
-  /** Прямой URL обложки (альтернатива currentThumbnailUrl из FK) */
-  currentThumbnailDirectUrl?: string | null;
   /** ID проекта для загрузки фото */
   projectId: number;
-  /** Callback после успешного сохранения */
-  onSaved?: () => void;
-  /** Callback при установке обложки — передаёт URL обложки для сохранения в ноде */
+  /** Callback при установке/сбросе обложки — передаёт URL обложки или null */
   onThumbnailSet?: (thumbnailUrl: string | null) => void;
 }
 
 /**
- * Встроенный блок выбора обложки видео
+ * Встроенный блок выбора обложки видео.
+ * Сохраняет обложку только в ноду project.json через onThumbnailSet — без запросов к БД.
  * @param props - Свойства компонента
  * @returns JSX элемент
  */
 export function ThumbnailSelector({
-  videoFileId,
-  currentThumbnailId,
   currentThumbnailUrl,
-  currentThumbnailDirectUrl,
   projectId,
-  onSaved,
   onThumbnailSet,
 }: ThumbnailSelectorProps) {
   /** Флаг открытия MediaManager */
@@ -53,59 +41,35 @@ export function ThumbnailSelector({
   /** URL из поля ввода */
   const [urlInput, setUrlInput] = useState("");
 
-  const { data: allFiles } = useMediaFiles(projectId);
-  const setThumbnail = useSetThumbnail();
-
-  /** URL для превью: сначала из FK, затем прямой URL */
-  const previewUrl = currentThumbnailUrl || currentThumbnailDirectUrl;
-  /** Показывать кнопку «Убрать» если есть хоть что-то */
-  const hasThumbnail = !!(currentThumbnailId || currentThumbnailDirectUrl);
+  /** URL для превью */
+  const previewUrl = currentThumbnailUrl;
+  /** Показывать кнопку «Убрать» если есть обложка */
+  const hasThumbnail = !!currentThumbnailUrl;
 
   /**
-   * Устанавливает обложку по объекту MediaFile
+   * Устанавливает обложку по объекту MediaFile — берёт URL файла
    * @param file - Выбранный медиафайл
    */
-  const handleSelectFile = async (file: MediaFile) => {
-    await setThumbnail.mutateAsync({ videoId: videoFileId, thumbnailId: file.id, thumbnailUrl: null });
+  const handleSelectFile = (file: MediaFile) => {
     onThumbnailSet?.(file.url);
     setIsOpen(false);
-    onSaved?.();
   };
 
   /**
-   * Применяет обложку по введённому URL.
-   * Если URL уже есть в БД — используем FK.
-   * Иначе — сохраняем URL напрямую без скачивания.
+   * Применяет обложку по введённому URL напрямую
    */
-  const handleApplyUrl = async () => {
+  const handleApplyUrl = () => {
     const trimmed = urlInput.trim();
     if (!trimmed) return;
-
-    // Сначала ищем уже существующую запись в БД по URL
-    const found = allFiles?.find((f) => f.url === trimmed);
-    if (found) {
-      // Файл уже в библиотеке — используем FK
-      await setThumbnail.mutateAsync({ videoId: videoFileId, thumbnailId: found.id, thumbnailUrl: null });
-      onThumbnailSet?.(found.url);
-      setUrlInput("");
-      onSaved?.();
-      return;
-    }
-
-    // Внешний URL или /uploads/ не в БД — сохраняем как строку напрямую
-    await setThumbnail.mutateAsync({ videoId: videoFileId, thumbnailId: null, thumbnailUrl: trimmed });
     onThumbnailSet?.(trimmed);
     setUrlInput("");
-    onSaved?.();
   };
 
   /**
-   * Убирает обложку (сбрасывает и FK и прямой URL)
+   * Убирает обложку
    */
-  const handleRemove = async () => {
-    await setThumbnail.mutateAsync({ videoId: videoFileId, thumbnailId: null, thumbnailUrl: null });
+  const handleRemove = () => {
     onThumbnailSet?.(null);
-    onSaved?.();
   };
 
   return (
@@ -116,7 +80,6 @@ export function ThumbnailSelector({
         {hasThumbnail && (
           <button
             onClick={handleRemove}
-            disabled={setThumbnail.isPending}
             className="text-xs text-red-500 hover:text-red-600 transition-colors"
           >
             Убрать
@@ -143,7 +106,6 @@ export function ThumbnailSelector({
           )}
           <button
             onClick={handleRemove}
-            disabled={setThumbnail.isPending}
             className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors"
           >
             <X className="w-3 h-3 text-white" />
@@ -164,7 +126,7 @@ export function ThumbnailSelector({
           size="sm"
           variant="outline"
           onClick={handleApplyUrl}
-          disabled={!urlInput.trim() || setThumbnail.isPending}
+          disabled={!urlInput.trim()}
           className="h-8 px-2 text-xs shrink-0"
         >
           ОК
