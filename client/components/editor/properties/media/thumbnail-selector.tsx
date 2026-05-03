@@ -146,7 +146,7 @@ export function ThumbnailSelector({
           url={previewUrl}
           fileName={thumbFile?.fileName ?? 'Обложка'}
           fileType={thumbFile?.fileType ?? 'photo'}
-          telegramFileId={thumbFile?.telegramFileId ?? undefined}
+          telegramFileId={thumbFile?.telegramFileId ?? null}
           projectId={projectId}
           onRemove={handleRemove}
         />
