@@ -283,6 +283,16 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
             if _sent_photo and _sent_photo.photo:
                 _new_fid = _sent_photo.photo[-1].file_id
                 logging.info(f"✅ Узел {{ nodeId }}: получен file_id={_new_fid[:20]}... для фото {{ imageUrl }}")
+                if db_pool:
+                    try:
+                        async with db_pool.acquire() as _conn:
+                            await _conn.execute(
+                                "UPDATE media_files SET telegram_file_id = $1 WHERE url = $2 AND project_id = $3",
+                                _new_fid, "{{ imageUrl }}", PROJECT_ID
+                            )
+                            logging.info(f"💾 file_id сохранён в БД для {{ imageUrl }}")
+                    except Exception as _db_err:
+                        logging.warning(f"⚠️ Не удалось сохранить file_id в БД: {_db_err}")
             return _sent_photo
 {%- endif %}
 {%- endif %}
@@ -304,6 +314,16 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
             if _sent_video and _sent_video.video:
                 _new_fid = _sent_video.video.file_id
                 logging.info(f"✅ Узел {{ nodeId }}: получен file_id={_new_fid[:20]}... для видео {{ videoUrl }}")
+                if db_pool:
+                    try:
+                        async with db_pool.acquire() as _conn:
+                            await _conn.execute(
+                                "UPDATE media_files SET telegram_file_id = $1 WHERE url = $2 AND project_id = $3",
+                                _new_fid, "{{ videoUrl }}", PROJECT_ID
+                            )
+                            logging.info(f"💾 file_id сохранён в БД для {{ videoUrl }}")
+                    except Exception as _db_err:
+                        logging.warning(f"⚠️ Не удалось сохранить file_id в БД: {_db_err}")
             return _sent_video
 {%- endif %}
 {%- endif %}
@@ -325,6 +345,16 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
             if _sent_audio and _sent_audio.audio:
                 _new_fid = _sent_audio.audio.file_id
                 logging.info(f"✅ Узел {{ nodeId }}: получен file_id={_new_fid[:20]}... для аудио {{ audioUrl }}")
+                if db_pool:
+                    try:
+                        async with db_pool.acquire() as _conn:
+                            await _conn.execute(
+                                "UPDATE media_files SET telegram_file_id = $1 WHERE url = $2 AND project_id = $3",
+                                _new_fid, "{{ audioUrl }}", PROJECT_ID
+                            )
+                            logging.info(f"💾 file_id сохранён в БД для {{ audioUrl }}")
+                    except Exception as _db_err:
+                        logging.warning(f"⚠️ Не удалось сохранить file_id в БД: {_db_err}")
             return _sent_audio
 {%- endif %}
 {%- endif %}
@@ -346,6 +376,16 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
             if _sent_doc and _sent_doc.document:
                 _new_fid = _sent_doc.document.file_id
                 logging.info(f"✅ Узел {{ nodeId }}: получен file_id={_new_fid[:20]}... для документа {{ documentUrl }}")
+                if db_pool:
+                    try:
+                        async with db_pool.acquire() as _conn:
+                            await _conn.execute(
+                                "UPDATE media_files SET telegram_file_id = $1 WHERE url = $2 AND project_id = $3",
+                                _new_fid, "{{ documentUrl }}", PROJECT_ID
+                            )
+                            logging.info(f"💾 file_id сохранён в БД для {{ documentUrl }}")
+                    except Exception as _db_err:
+                        logging.warning(f"⚠️ Не удалось сохранить file_id в БД: {_db_err}")
             return _sent_doc
 {%- endif %}
 {%- endif %}
