@@ -103,7 +103,7 @@ export function useInfiniteUsers(params: UseInfiniteUsersParams): UseInfiniteUse
     },
     enabled: !!projectId,
     staleTime: 0,
-    gcTime: 0,
+    gcTime: 30_000,
     retry: false,
   });
 
