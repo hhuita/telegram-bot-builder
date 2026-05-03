@@ -55,23 +55,27 @@ export function MultiMediaSelector({
   // Проверяем, включена ли клавиатура (для определения скрытых файлов)
   const hasKeyboard = keyboardType === 'inline' || keyboardType === 'reply';
 
-  /** Данные медиафайлов из БД — для получения telegramFileId по URL */
+  /** Данные медиафайлов из БД — для получения имени, типа и telegramFileId по URL */
   const { data: dbFiles } = useMediaFiles(projectId);
 
-  /** Индекс URL → telegramFileId из БД */
-  const fileIdByUrl = useMemo(() => {
-    const map = new Map<string, string | null>();
-    dbFiles?.forEach((f) => map.set(f.url, f.telegramFileId ?? null));
+  /** Маппинг URL → объект файла из БД для быстрого доступа к метаданным */
+  const dbFileByUrl = useMemo(() => {
+    const map = new Map<string, typeof dbFiles[0]>();
+    dbFiles?.forEach((f) => map.set(f.url, f));
     return map;
   }, [dbFiles]);
 
-  const files: MediaFileData[] = value.map((url, index) => ({
-    url,
-    fileName: `Файл ${index + 1}`,
-    fileType: getMediaTypeByUrl(url),
-    telegramFileId: fileIdByUrl.get(url) ?? null,
-    isHidden: hasKeyboard && index > 0,
-  }));
+  /** Формируем массив файлов с реальными именами и типами из БД (если доступны) */
+  const files: MediaFileData[] = value.map((url, index) => {
+    const dbFile = dbFileByUrl.get(url);
+    return {
+      url,
+      fileName: dbFile?.fileName ?? `Файл ${index + 1}`,
+      fileType: dbFile?.fileType ?? getMediaTypeByUrl(url),
+      telegramFileId: dbFile?.telegramFileId ?? null,
+      isHidden: hasKeyboard && index > 0,
+    };
+  });
 
   const handleAddUrl = async () => {
     if (!urlInput.trim()) return;
