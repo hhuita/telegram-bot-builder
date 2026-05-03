@@ -34,4 +34,10 @@ export interface MediaNodeTemplateParams {
   autoTransitionTo?: string;
   /** Список получателей (если пустой — отправка пользователю) */
   messageSendRecipients?: MediaSendRecipient[];
+  /**
+   * Словарь кэшированных Telegram file_id.
+   * Ключ — URL или путь медиафайла, значение — Telegram file_id.
+   * Если для URL есть file_id — отправляем через него напрямую.
+   */
+  telegramFileIds?: Record<string, string>;
 }

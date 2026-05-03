@@ -319,6 +319,8 @@ export function generateNodeHandlers(nodes: Node[], userDatabaseEnabled: boolean
       attachedMedia: node.data?.attachedMedia || [],
       /** Список получателей медиа-сообщения */
       messageSendRecipients: (node.data as any)?.messageSendRecipients || [],
+      /** Кэшированные Telegram file_id для медиафайлов узла */
+      telegramFileIds: (node.data as any)?.telegramFileIds || {},
     }),
   };
 

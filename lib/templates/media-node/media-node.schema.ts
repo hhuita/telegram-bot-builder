@@ -33,6 +33,11 @@ export const mediaNodeParamsSchema = z.object({
   autoTransitionTo: z.string().optional(),
   /** Список получателей (если пустой — отправка пользователю) */
   messageSendRecipients: z.array(mediaSendRecipientSchema).optional().default([]),
+  /**
+   * Словарь кэшированных Telegram file_id.
+   * Ключ — URL или путь медиафайла, значение — Telegram file_id.
+   */
+  telegramFileIds: z.record(z.string(), z.string()).optional().default({}),
 });
 
 /** Тип параметров медиа-ноды (выведен из схемы) */

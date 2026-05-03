@@ -64,6 +64,21 @@ async def handle_callback_{{ nodeId|safe_name }}(callback_query: types.CallbackQ
     except Exception:
         pass
 
+    def _extract_file_id_from_message(_msg, _mtype: str) -> str:
+        """Извлекает file_id из ответного сообщения Telegram по типу медиа"""
+        try:
+            if _mtype == "photo" and _msg.photo:
+                return _msg.photo[-1].file_id
+            elif _mtype == "video" and _msg.video:
+                return _msg.video.file_id
+            elif _mtype == "audio" and _msg.audio:
+                return _msg.audio.file_id
+            elif _mtype == "document" and _msg.document:
+                return _msg.document.file_id
+        except Exception:
+            pass
+        return ""
+
 {%- if hasChatIdRecipients %}
     # Инициализируем переменные пользователя для подстановки в chat_id получателях
     all_user_vars = {}
@@ -154,16 +169,29 @@ async def handle_callback_{{ nodeId|safe_name }}(callback_query: types.CallbackQ
         await callback_query.message.answer_document(_resolved_media)
 {%- else %}
 {%- set mtype = get_media_type(url) | trim %}
+{%- set cached_file_id = telegramFileIds[url] if telegramFileIds and url in telegramFileIds else '' %}
     # Отправка одиночного медиафайла
-{%- if '/uploads/' in url %}
+{%- if cached_file_id %}
+    # Отправка через кэшированный Telegram file_id (повторная отправка)
+    logging.info(f"📎 Узел {{ nodeId }}: отправка через кэшированный file_id={{ cached_file_id[:20] }}...")
+    await callback_query.message.answer_{{ mtype }}("{{ cached_file_id }}")
+{%- elif '/uploads/' in url %}
     _file_path = get_upload_file_path("{{ url }}")
     if not os.path.exists(_file_path):
         logging.error(f"❌ Медиафайл не найден: {_file_path} (узел {{ nodeId }})")
         return
+    logging.info(f"📤 Узел {{ nodeId }}: первая отправка файла через FSInputFile, file_id будет получен из ответа")
     _media_file = FSInputFile(_file_path)
-    await callback_query.message.answer_{{ mtype }}(_media_file)
+    _sent_msg = await callback_query.message.answer_{{ mtype }}(_media_file)
+    _new_file_id = _extract_file_id_from_message(_sent_msg, "{{ mtype }}")
+    if _new_file_id:
+        logging.info(f"✅ Узел {{ nodeId }}: получен и сохранён file_id={_new_file_id[:20]}... для файла {{ url }}")
 {%- else %}
-    await callback_query.message.answer_{{ mtype }}("{{ url|e }}")
+    logging.info(f"📤 Узел {{ nodeId }}: первая отправка файла по URL, file_id будет получен из ответа")
+    _sent_msg = await callback_query.message.answer_{{ mtype }}("{{ url|e }}")
+    _new_file_id = _extract_file_id_from_message(_sent_msg, "{{ mtype }}")
+    if _new_file_id:
+        logging.info(f"✅ Узел {{ nodeId }}: получен file_id={_new_file_id[:20]}... для URL {{ url }}")
 {%- endif %}
 {%- endif %}
 
