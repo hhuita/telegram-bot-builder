@@ -20,6 +20,8 @@ type UsersTabContentProps = Pick<
   | 'deleteUserMutation'
   | 'visibleColumns'
   | 'projectId'
+  | 'onOpenUserDetailsPanel'
+  | 'onOpenDialogPanel'
 >;
 
 /**
@@ -36,6 +38,8 @@ export function UsersTabContent(props: UsersTabContentProps): React.JSX.Element 
     deleteUserMutation,
     visibleColumns,
     projectId,
+    onOpenUserDetailsPanel,
+    onOpenDialogPanel,
   } = props;
 
   return (
@@ -55,6 +59,8 @@ export function UsersTabContent(props: UsersTabContentProps): React.JSX.Element 
             deleteUserMutation={deleteUserMutation}
             visibleColumns={visibleColumns}
             projectId={projectId}
+            onOpenUserDetailsPanel={onOpenUserDetailsPanel}
+            onOpenDialogPanel={onOpenDialogPanel}
           />
         )}
       </div>
