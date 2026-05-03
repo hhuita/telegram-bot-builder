@@ -120,11 +120,20 @@ export function ThumbnailSelector({
       {/* Превью текущей обложки */}
       {previewUrl && (
         <div className="relative w-full rounded-lg overflow-hidden border border-slate-200/60 dark:border-slate-700/60">
-          <img
-            src={previewUrl}
-            alt="обложка"
-            className="w-full h-20 object-cover"
-          />
+          {previewUrl.startsWith('{') && previewUrl.endsWith('}') ? (
+            /* Переменная — показываем бейдж вместо img */
+            <div className="flex items-center gap-2 p-2 bg-amber-50/50 dark:bg-amber-900/20">
+              <span className="text-base">🖼️</span>
+              <span className="text-xs font-mono text-amber-800 dark:text-amber-200 truncate">{previewUrl}</span>
+            </div>
+          ) : (
+            <img
+              src={previewUrl}
+              alt="обложка"
+              className="w-full h-20 object-cover"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          )}
           <button
             onClick={handleRemove}
             disabled={setThumbnail.isPending}
