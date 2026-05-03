@@ -150,12 +150,18 @@ export function ThumbnailSelector({
               <span className="text-xs font-mono text-amber-800 dark:text-amber-200 truncate">{previewUrl}</span>
             </div>
           ) : (
-            <img
-              src={previewUrl}
-              alt="обложка"
-              className="w-full h-20 object-cover"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-            />
+            <>
+              <img
+                src={previewUrl}
+                alt="обложка"
+                className="w-full h-20 object-cover"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+              {/* URL обложки под картинкой */}
+              <div className="px-2 py-1 bg-slate-900/60">
+                <p className="text-[10px] font-mono text-slate-300 truncate">{previewUrl}</p>
+              </div>
+            </>
           )}
           <button
             onClick={handleRemove}
