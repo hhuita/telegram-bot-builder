@@ -16,6 +16,7 @@ import { useVariableToQuestionMap, useFilteredAndSortedUsers } from './panel/pan
 import { useUserDatabasePanelState } from './panel/panel-state';
 import { UserDatabasePanelProps } from './types';
 import { formatUserName } from './utils';
+import { UserMessagesLiveProvider } from './contexts/user-messages-live-context';
 
 /**
  * Компонент панели базы данных пользователей
@@ -157,8 +158,9 @@ export function UserDatabasePanel(props: UserDatabasePanelProps): React.JSX.Elem
   }
 
   return (
-    <div ref={containerRef} className="flex h-full w-full flex-col">
-      <DatabaseContent
+    <UserMessagesLiveProvider projectId={projectId}>
+      <div ref={containerRef} className="flex h-full w-full flex-col">
+        <DatabaseContent
         projectId={projectId}
         projectName={projectName}
         selectedTokenId={resolvedSelectedTokenId}
@@ -195,7 +197,8 @@ export function UserDatabasePanel(props: UserDatabasePanelProps): React.JSX.Elem
         allProjects={allProjects}
         onProjectChange={onProjectChange}
         saveIncomingMedia={saveIncomingMedia}
-      />
-    </div>
+        />
+      </div>
+    </UserMessagesLiveProvider>
   );
 }
