@@ -1,12 +1,14 @@
 /**
- * @fileoverview Хук real-time инвалидации кэша при новых сообщениях.
- * При событии new-message обновляет статистику и список пользователей.
+ * @fileoverview Хук real-time обновления статистики и списка пользователей.
+ * При событии new-message мгновенно инкрементирует счётчики в кэше,
+ * а через 2 секунды синхронизирует данные с PostgreSQL.
  */
 
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useUserMessagesLiveContext } from '../contexts/user-messages-live-context';
 import { buildUsersApiUrl } from '@/components/editor/database/utils';
+import { UserStats } from '../types';
 
 /**
  * Параметры хука useLiveInvalidate
@@ -19,9 +21,10 @@ interface UseLiveInvalidateParams {
 }
 
 /**
- * Хук real-time инвалидации кэша при получении новых сообщений.
- * Подписывается на события WebSocket-контекста и с дебаунсом 2 секунды
- * инвалидирует статистику и первую страницу infinite query пользователей.
+ * Хук real-time обновления статистики и списка пользователей.
+ * При каждом new-message:
+ *   - мгновенно инкрементирует totalInteractions в кэше (optimistic update)
+ *   - с дебаунсом 2 сек синхронизирует статистику и список с PostgreSQL
  * @param params - Параметры хука
  * @returns void
  */
@@ -32,19 +35,25 @@ export function useLiveInvalidate({ projectId, selectedTokenId }: UseLiveInvalid
   useEffect(() => {
     if (!liveContext) return;
 
-    // Дебаунс — не инвалидировать чаще чем раз в 2 секунды
+    const statsUrl = buildUsersApiUrl(`/api/projects/${projectId}/users/stats`, selectedTokenId);
+    const statsKey = [statsUrl, selectedTokenId];
+
+    /** Таймер дебаунса для синхронизации с БД */
     let timer: ReturnType<typeof setTimeout> | null = null;
 
     const unsubscribe = liveContext.subscribe(() => {
-      if (timer) return; // уже запланировано
+      // Мгновенный optimistic update — инкрементируем totalInteractions в памяти
+      queryClient.setQueryData<UserStats>(statsKey, (old) => ({
+        ...(old ?? {}),
+        totalInteractions: (old?.totalInteractions ?? 0) + 1,
+      }));
+
+      // Дебаунс — синхронизация с PostgreSQL не чаще раза в 2 секунды
+      if (timer) return;
       timer = setTimeout(() => {
         timer = null;
-
-        // Инвалидируем статистику
-        const statsUrl = buildUsersApiUrl(`/api/projects/${projectId}/users/stats`, selectedTokenId);
-        queryClient.invalidateQueries({ queryKey: [statsUrl, selectedTokenId] });
-
-        // Инвалидируем infinite query пользователей (перезагрузит первую страницу)
+        // Перезапрашиваем актуальные данные из БД
+        queryClient.invalidateQueries({ queryKey: statsKey });
         queryClient.invalidateQueries({ queryKey: ['infinite-users', projectId, selectedTokenId] });
       }, 2000);
     });
