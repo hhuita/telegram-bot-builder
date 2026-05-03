@@ -152,77 +152,84 @@ export function ThumbnailSelector({
         />
       )}
 
-      {/* Поле ввода URL */}
-      <div className="flex gap-2">
-        <Input
-          value={urlInput}
-          onChange={(e) => handleUrlChange(e.target.value)}
-          placeholder="URL фото обложки"
-          className="h-8 text-xs flex-1"
-          onKeyDown={(e) => e.key === "Enter" && handleApplyUrl()}
-        />
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={handleApplyUrl}
-          disabled={!urlInput.trim() || validationErrors.length > 0}
-          className="h-8 px-2 text-xs shrink-0"
-        >
-          ОК
-        </Button>
-      </div>
-
-      {/* Блок ошибок валидации — блокируют применение */}
-      {validationErrors.length > 0 && (
-        <div className="rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-2 py-1.5 space-y-0.5">
-          {validationErrors.map((err, i) => (
-            <p key={i} className="text-xs text-red-600 dark:text-red-400">❌ {err}</p>
-          ))}
-        </div>
-      )}
-
-      {/* Блок предупреждений валидации — не блокируют */}
-      {validationWarnings.length > 0 && validationErrors.length === 0 && (
-        <div className="rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-2 py-1.5 space-y-0.5">
-          {validationWarnings.map((warn, i) => (
-            <p key={i} className="text-xs text-amber-700 dark:text-amber-300">⚠️ {warn}</p>
-          ))}
-        </div>
-      )}
-
-      {/* Информационный блок с требованиями Telegram */}
-      <div className="rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 px-2 py-1.5">
-        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
-          ℹ️ Требования Telegram: JPEG, до 200 KB, до 320×320 px.<br />
-          Для видео &lt; 10 MB Telegram генерирует превью автоматически.
-        </p>
-      </div>
-
-      {/* Кнопка открытия MediaManager */}
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogTrigger asChild>
+      {/* Поле ввода URL — показываем только если обложка не установлена */}
+      {!previewUrl && (
+        <div className="flex gap-2">
+          <Input
+            value={urlInput}
+            onChange={(e) => handleUrlChange(e.target.value)}
+            placeholder="URL фото обложки"
+            className="h-8 text-xs flex-1"
+            onKeyDown={(e) => e.key === "Enter" && handleApplyUrl()}
+          />
           <Button
             size="sm"
-            className="w-full h-8 text-xs font-semibold bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
+            variant="outline"
+            onClick={handleApplyUrl}
+            disabled={!urlInput.trim() || validationErrors.length > 0}
+            className="h-8 px-2 text-xs shrink-0"
           >
-            <Upload className="w-3 h-3 mr-1.5" />
-            Выбрать или загрузить фото
+            ОК
           </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-5xl">
-          <DialogHeader>
-            <DialogTitle>
-              <i className="fas fa-image mr-2 text-blue-600"></i>
-              Выбор обложки видео
-            </DialogTitle>
-          </DialogHeader>
-          <MediaManager
-            projectId={projectId}
-            selectedType="photo"
-            onSelectFile={handleSelectFile}
-          />
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
+
+      {/* Блоки валидации и кнопка выбора — только если обложка не установлена */}
+      {!previewUrl && (
+        <>
+          {/* Блок ошибок валидации — блокируют применение */}
+          {validationErrors.length > 0 && (
+            <div className="rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-2 py-1.5 space-y-0.5">
+              {validationErrors.map((err, i) => (
+                <p key={i} className="text-xs text-red-600 dark:text-red-400">❌ {err}</p>
+              ))}
+            </div>
+          )}
+
+          {/* Блок предупреждений валидации — не блокируют */}
+          {validationWarnings.length > 0 && validationErrors.length === 0 && (
+            <div className="rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-2 py-1.5 space-y-0.5">
+              {validationWarnings.map((warn, i) => (
+                <p key={i} className="text-xs text-amber-700 dark:text-amber-300">⚠️ {warn}</p>
+              ))}
+            </div>
+          )}
+
+          {/* Информационный блок с требованиями Telegram */}
+          <div className="rounded-md bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 px-2 py-1.5">
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              ℹ️ Требования Telegram: JPEG, до 200 KB, до 320×320 px.<br />
+              Для видео &lt; 10 MB Telegram генерирует превью автоматически.
+            </p>
+          </div>
+
+          {/* Кнопка открытия MediaManager */}
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+              <Button
+                size="sm"
+                className="w-full h-8 text-xs font-semibold bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
+              >
+                <Upload className="w-3 h-3 mr-1.5" />
+                Выбрать или загрузить фото
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-5xl">
+              <DialogHeader>
+                <DialogTitle>
+                  <i className="fas fa-image mr-2 text-blue-600"></i>
+                  Выбор обложки видео
+                </DialogTitle>
+              </DialogHeader>
+              <MediaManager
+                projectId={projectId}
+                selectedType="photo"
+                onSelectFile={handleSelectFile}
+              />
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
     </div>
   );
 }
