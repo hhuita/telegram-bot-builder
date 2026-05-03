@@ -3,6 +3,7 @@
  *
  * Встроенный блок без диалога — поле URL и кнопка открытия MediaManager.
  * Обложка сохраняется только в ноду project.json (attachedMediaThumbnails) — без запросов к БД.
+ * Текущая обложка отображается через MediaFileCard для единообразия с карточками видео/фото.
  *
  * @module media/thumbnail-selector
  */
@@ -11,11 +12,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Upload, X } from "lucide-react";
+import { Upload } from "lucide-react";
 import { MediaManager } from "./media-manager";
+import { MediaFileCard } from "./media-file-card";
 import { apiRequest } from "@/queryClient";
 import type { MediaFile } from "@shared/schema";
 import { validateThumbnailUrl, validateThumbnailFile } from "./use-thumbnail-validation";
+import { useMediaFiles } from "../hooks/use-media";
 
 /** Пропсы компонента ThumbnailSelector */
 export interface ThumbnailSelectorProps {
@@ -53,6 +56,11 @@ export function ThumbnailSelector({
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
   /** Ошибки валидации (блокируют кнопку ОК) */
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  /** Все файлы проекта — нужны для поиска метаданных обложки */
+  const { data: allFiles } = useMediaFiles(projectId);
+  /** Файл обложки из БД — ищем по URL */
+  const thumbFile = allFiles?.find(f => f.url === currentThumbnailUrl);
 
   /** URL для превью */
   const previewUrl = currentThumbnailUrl;
@@ -132,37 +140,16 @@ export function ThumbnailSelector({
         <span className="text-xs font-medium text-slate-600 dark:text-slate-400">🖼 Обложка видео</span>
       </div>
 
-      {/* Превью текущей обложки — в стиле мини-карточки как у медиафайлов */}
+      {/* Превью текущей обложки через MediaFileCard */}
       {previewUrl && (
-        <div className="relative flex items-center gap-3 rounded-lg border border-slate-200/60 dark:border-slate-700/60 bg-slate-50/50 dark:bg-slate-800/30 p-2">
-          {/* Мини-квадрат с картинкой */}
-          <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-slate-200 dark:bg-slate-700">
-            {previewUrl.startsWith('{') && previewUrl.endsWith('}') ? (
-              <div className="w-full h-full flex items-center justify-center">
-                <span className="text-lg">🖼️</span>
-              </div>
-            ) : (
-              <img
-                src={previewUrl}
-                alt="обложка"
-                className="w-full h-full object-cover"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-              />
-            )}
-          </div>
-          {/* Название и URL */}
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">Обложка</p>
-            <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400 truncate">{previewUrl}</p>
-          </div>
-          {/* Кнопка удаления */}
-          <button
-            onClick={handleRemove}
-            className="w-5 h-5 rounded-full bg-red-500/80 hover:bg-red-600 flex items-center justify-center flex-shrink-0 transition-colors"
-          >
-            <X className="w-3 h-3 text-white" />
-          </button>
-        </div>
+        <MediaFileCard
+          url={previewUrl}
+          fileName={thumbFile?.fileName ?? 'Обложка'}
+          fileType={thumbFile?.fileType ?? 'photo'}
+          telegramFileId={thumbFile?.telegramFileId ?? undefined}
+          projectId={projectId}
+          onRemove={handleRemove}
+        />
       )}
 
       {/* Поле ввода URL */}
