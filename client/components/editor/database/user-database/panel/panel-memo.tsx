@@ -5,7 +5,7 @@
 
 import { useMemo } from 'react';
 import { UserBotData } from '@shared/schema';
-import { SortField, SortDirection, VariableToQuestionMap, UserMessageCounts } from '../types';
+import { VariableToQuestionMap, UserMessageCounts } from '../types';
 
 /**
  * Пропсы для хука useVariableToQuestionMap
@@ -27,22 +27,14 @@ interface UseUserMessageCountsParams {
  * Пропсы для хука useFilteredAndSortedUsers
  */
 interface UseFilteredAndSortedUsersParams {
-  /** Список пользователей */
+  /** Список пользователей (уже отфильтрованных и отсортированных сервером) */
   users: UserBotData[];
-  /** Результаты поиска */
-  searchResults: UserBotData[];
-  /** Поисковый запрос */
-  searchQuery: string;
-  /** Фильтр по статусу */
+  /** Фильтр по статусу активности */
   filterActive: boolean | null;
   /** Фильтр по Premium */
   filterPremium: boolean | null;
   /** Фильтр по блокировке */
   filterBlocked: boolean | null;
-  /** Поле сортировки */
-  sortField: SortField;
-  /** Направление сортировки */
-  sortDirection: SortDirection;
 }
 
 /**
@@ -121,28 +113,20 @@ export function useUserMessageCounts(
 }
 
 /**
- * Хук для фильтрации и сортировки пользователей
+ * Хук для клиентской фильтрации пользователей.
+ * Поиск и сортировка выполняются на сервере — здесь только локальные фильтры.
  * @param params - Параметры хука
- * @returns Отфильтрованный и отсортированный список
+ * @returns Отфильтрованный список пользователей
  */
 export function useFilteredAndSortedUsers(
   params: UseFilteredAndSortedUsersParams
 ): UserBotData[] {
-  const {
-    users,
-    searchResults,
-    searchQuery,
-    filterActive,
-    filterPremium,
-    filterBlocked,
-    sortField,
-    sortDirection,
-  } = params;
+  const { users, filterActive, filterPremium, filterBlocked } = params;
 
   return useMemo(() => {
-    let result = searchQuery.length > 0 ? searchResults : users;
+    let result = users;
 
-    // Apply filters
+    // Фильтр по активности (дублирует серверный, но нужен для мгновенного отклика UI)
     if (filterActive !== null) {
       result = result.filter(user => Boolean(user.isActive) === filterActive);
     }
@@ -153,54 +137,6 @@ export function useFilteredAndSortedUsers(
       result = result.filter(user => Boolean(user.isBlocked) === filterBlocked);
     }
 
-    // Sort
-    result = [...result].sort((a, b) => {
-      let aValue: any, bValue: any;
-
-      if (sortField === 'lastInteraction') {
-        aValue = a.lastInteraction;
-        bValue = b.lastInteraction;
-      } else if (sortField === 'createdAt') {
-        aValue = a.createdAt;
-        bValue = b.createdAt;
-      } else if (sortField === 'interactionCount') {
-        aValue = a.interactionCount;
-        bValue = b.interactionCount;
-      } else if (sortField === 'firstName') {
-        aValue = a.firstName;
-        bValue = b.firstName;
-      } else if (sortField === 'userName') {
-        aValue = a.userName;
-        bValue = b.userName;
-      } else {
-        aValue = a[sortField];
-        bValue = b[sortField];
-      }
-
-      if (sortField === 'lastInteraction' || sortField === 'createdAt') {
-        aValue = new Date(aValue || 0).getTime();
-        bValue = new Date(bValue || 0).getTime();
-      } else if (typeof aValue === 'string') {
-        aValue = aValue.toLowerCase();
-        bValue = bValue?.toLowerCase() || '';
-      }
-
-      if (sortDirection === 'asc') {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
-    });
-
     return result;
-  }, [
-    users,
-    searchResults,
-    searchQuery,
-    filterActive,
-    filterPremium,
-    filterBlocked,
-    sortField,
-    sortDirection,
-  ]);
+  }, [users, filterActive, filterPremium, filterBlocked]);
 }

@@ -14,8 +14,14 @@ export interface UseUserDatabaseParams {
   projectId: number;
   /** Идентификатор выбранного токена бота */
   selectedTokenId?: number | null;
-  /** Поисковый запрос */
+  /** Поисковый запрос (передаётся на сервер) */
   searchQuery: string;
+  /** Фильтр по активности: true — активные, false — неактивные, null — все */
+  filterActive?: boolean | null;
+  /** Поле сортировки */
+  sortField?: string;
+  /** Направление сортировки */
+  sortDirection?: 'asc' | 'desc';
 }
 
 /**
@@ -24,12 +30,10 @@ export interface UseUserDatabaseParams {
 export interface UseUserDatabaseReturn {
   /** Данные проекта */
   project?: BotProject;
-  /** Список пользователей */
+  /** Список пользователей (все загруженные страницы) */
   users: UserBotData[];
   /** Статистика пользователей */
   stats: UserStats;
-  /** Результаты поиска пользователей */
-  searchResults: UserBotData[];
   /** Общее состояние загрузки */
   isLoading: boolean;
   /** Состояние загрузки пользователей */
@@ -40,4 +44,10 @@ export interface UseUserDatabaseReturn {
   refetchUsers: () => void;
   /** Функция обновления статистики */
   refetchStats: () => void;
+  /** Загрузить следующую страницу пользователей */
+  fetchNextPage: () => void;
+  /** Есть ли следующая страница */
+  hasNextPage: boolean;
+  /** Идёт ли загрузка следующей страницы */
+  isFetchingNextPage: boolean;
 }

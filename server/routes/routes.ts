@@ -2172,33 +2172,102 @@ export async function registerRoutes(app: Express, httpServer?: Server): Promise
       }
     }
 
+    // Параметры пагинации: если limit не передан — обратная совместимость (массив)
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : null;
+    const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+
+    // Параметры серверного поиска, фильтрации и сортировки (только для пагинированного режима)
+    const search = req.query.search as string | undefined;
+    const filterActive = req.query.filterActive as string | undefined;
+    const sortBy = req.query.sortBy as string | undefined;
+    const sortDir = req.query.sortDir as string | undefined;
+
+    // Белый список колонок для ORDER BY (защита от SQL injection)
+    const sortColumnMap: Record<string, string> = {
+      lastInteraction: 'u.last_interaction',
+      createdAt: 'u.registered_at',
+      interactionCount: 'u.interaction_count',
+      firstName: 'u.first_name',
+      userName: 'u.username',
+    };
+    const sortColumn = sortColumnMap[sortBy as string] ?? 'u.last_interaction';
+    const sortOrder = sortDir === 'asc' ? 'ASC' : 'DESC';
+
+    const selectBase = `
+      SELECT
+        ROW_NUMBER() OVER (ORDER BY u.last_interaction DESC) AS id,
+        u.user_id::text AS "userId",
+        u.username AS "userName",
+        u.first_name AS "firstName",
+        u.last_name AS "lastName",
+        u.avatar_url AS "avatarUrl",
+        u.registered_at AS "registeredAt",
+        u.registered_at AS "createdAt",
+        u.last_interaction AS "lastInteraction",
+        COALESCE(u.interaction_count, 0)::integer AS "interactionCount",
+        CASE WHEN u.is_active = 1 THEN TRUE ELSE FALSE END AS "isActive",
+        FALSE AS "isPremium",
+        FALSE AS "isBlocked",
+        CASE WHEN u.is_bot = 1 THEN TRUE ELSE FALSE END AS "isBot",
+        lm.message_text AS "lastMessageText",
+        lm.created_at AS "lastMessageAt"
+      FROM bot_users u
+      LEFT JOIN LATERAL (
+        SELECT message_text, created_at
+        FROM bot_messages
+        WHERE user_id = u.user_id::text
+          AND project_id = u.project_id
+        ORDER BY created_at DESC
+        LIMIT 1
+      ) lm ON true
+      WHERE u.is_bot = 0
+        AND u.project_id = $1
+        AND ($2::integer IS NULL OR u.token_id = $2)
+    `;
+
     try {
-      console.log(`Fetching users for project ${projectId}`);
+      if (limit !== null) {
+        // Режим пагинации: строим динамические условия WHERE
+        const params: any[] = [projectId, tokenId];
+        let paramIdx = 3;
+        const conditions: string[] = [];
 
-      const result = await dbPool.query(`
-        SELECT
-          ROW_NUMBER() OVER (ORDER BY last_interaction DESC) AS id,
-          user_id::text AS "userId",
-          username AS "userName",
-          first_name AS "firstName",
-          last_name AS "lastName",
-          avatar_url AS "avatarUrl",
-          registered_at AS "registeredAt",
-          registered_at AS "createdAt",
-          last_interaction AS "lastInteraction",
-          COALESCE(interaction_count, 0)::integer AS "interactionCount",
-          user_data AS "userData",
-          CASE WHEN is_active = 1 THEN TRUE ELSE FALSE END AS "isActive",
-          FALSE AS "isPremium",
-          FALSE AS "isBlocked",
-          CASE WHEN is_bot = 1 THEN TRUE ELSE FALSE END AS "isBot"
-        FROM bot_users
-        WHERE is_bot = 0
-          AND project_id = $1
-          AND ($2::integer IS NULL OR token_id = $2)
-        ORDER BY last_interaction DESC
-      `, [projectId, tokenId]);
+        if (search) {
+          const searchParam = `%${search}%`;
+          conditions.push(
+            `(u.first_name ILIKE $${paramIdx} OR u.username ILIKE $${paramIdx} OR u.user_id::text ILIKE $${paramIdx})`
+          );
+          params.push(searchParam);
+          paramIdx++;
+        }
+        if (filterActive === 'true') conditions.push('u.is_active = 1');
+        if (filterActive === 'false') conditions.push('u.is_active = 0');
 
+        const whereExtra = conditions.length ? ' AND ' + conditions.join(' AND ') : '';
+
+        const dataSql = `${selectBase}${whereExtra} ORDER BY ${sortColumn} ${sortOrder} LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`;
+        const countSql = `
+          SELECT COUNT(*)::integer AS total FROM bot_users u
+          WHERE u.is_bot = 0 AND u.project_id = $1 AND ($2::integer IS NULL OR u.token_id = $2)${whereExtra}
+        `;
+
+        const dataParams = [...params, limit, offset];
+        const countParams = [...params];
+
+        const [dataResult, countResult] = await Promise.all([
+          dbPool.query(dataSql, dataParams),
+          dbPool.query(countSql, countParams),
+        ]);
+
+        const total: number = countResult.rows[0]?.total ?? 0;
+        const users = dataResult.rows;
+        console.log(`Paginated: project ${projectId}, offset=${offset}, limit=${limit}, total=${total}`);
+        return res.json({ users, total, hasMore: offset + users.length < total });
+      }
+
+      // Обратная совместимость: возвращаем массив без пагинации (без фильтров)
+      const selectSql = `${selectBase} ORDER BY u.last_interaction DESC`;
+      const result = await dbPool.query(selectSql, [projectId, tokenId]);
       console.log(`Found ${result.rows.length} users for project ${projectId}`);
       res.json(result.rows);
     } catch (error) {
@@ -2208,7 +2277,7 @@ export async function registerRoutes(app: Express, httpServer?: Server): Promise
         const users = await storage.getUserBotDataByProject(parseInt(req.params.id), tokenId);
         const projectId = parseInt(req.params.id);
         console.log(`Found ${users.length} users for project ${projectId} from fallback`);
-        res.json(users);
+        res.json(limit !== null ? { users, total: users.length, hasMore: false } : users);
       } catch (fallbackError) {
         res.status(500).json({ message: "Failed to fetch user data" });
       }

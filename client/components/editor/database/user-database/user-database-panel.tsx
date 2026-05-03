@@ -16,6 +16,8 @@ import { useVariableToQuestionMap, useFilteredAndSortedUsers } from './panel/pan
 import { useUserDatabasePanelState } from './panel/panel-state';
 import { UserDatabasePanelProps } from './types';
 import { formatUserName } from './utils';
+import { UserMessagesLiveProvider } from './contexts/user-messages-live-context';
+import { useLiveInvalidate } from './hooks/use-live-invalidate';
 
 /**
  * Компонент панели базы данных пользователей
@@ -64,14 +66,19 @@ export function UserDatabasePanel(props: UserDatabasePanelProps): React.JSX.Elem
     project,
     users,
     stats,
-    searchResults,
     isLoading,
     refetchUsers,
     refetchStats,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   } = useUserDatabasePanelData({
     projectId,
     selectedTokenId: resolvedSelectedTokenId,
     searchQuery,
+    filterActive,
+    sortField,
+    sortDirection,
   });
 
   const {
@@ -115,13 +122,9 @@ export function UserDatabasePanel(props: UserDatabasePanelProps): React.JSX.Elem
 
   const filteredAndSortedUsers = useFilteredAndSortedUsers({
     users,
-    searchResults,
-    searchQuery,
     filterActive,
     filterPremium,
     filterBlocked: null,
-    sortField,
-    sortDirection,
   });
 
   const { handleUserStatusToggle } = useUserDatabasePanelHandlers(
@@ -157,8 +160,10 @@ export function UserDatabasePanel(props: UserDatabasePanelProps): React.JSX.Elem
   }
 
   return (
-    <div ref={containerRef} className="flex h-full w-full flex-col">
-      <DatabaseContent
+    <UserMessagesLiveProvider projectId={projectId}>
+      <LiveInvalidator projectId={projectId} selectedTokenId={resolvedSelectedTokenId} />
+      <div ref={containerRef} className="flex h-full w-full flex-col">
+        <DatabaseContent
         projectId={projectId}
         projectName={projectName}
         selectedTokenId={resolvedSelectedTokenId}
@@ -195,7 +200,32 @@ export function UserDatabasePanel(props: UserDatabasePanelProps): React.JSX.Elem
         allProjects={allProjects}
         onProjectChange={onProjectChange}
         saveIncomingMedia={saveIncomingMedia}
-      />
-    </div>
+        fetchNextPage={fetchNextPage}
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        />
+      </div>
+    </UserMessagesLiveProvider>
   );
+}
+
+/**
+ * Пропсы внутреннего компонента-инвалидатора
+ */
+interface LiveInvalidatorProps {
+  /** Идентификатор проекта */
+  projectId: number;
+  /** Идентификатор выбранного токена бота */
+  selectedTokenId: number | null;
+}
+
+/**
+ * Вспомогательный компонент, вызывающий useLiveInvalidate внутри UserMessagesLiveProvider.
+ * Рендерится без UI — только для подключения хука к контексту провайдера.
+ * @param props - Пропсы компонента
+ * @returns null
+ */
+function LiveInvalidator({ projectId, selectedTokenId }: LiveInvalidatorProps): null {
+  useLiveInvalidate({ projectId, selectedTokenId });
+  return null;
 }
