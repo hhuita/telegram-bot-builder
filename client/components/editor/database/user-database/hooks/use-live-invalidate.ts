@@ -180,6 +180,8 @@ export function useLiveInvalidate({ projectId, selectedTokenId }: UseLiveInvalid
     const statsUrl = buildUsersApiUrl(`/api/projects/${projectId}/users/stats`, selectedTokenId);
     const statsKey = [statsUrl, selectedTokenId];
     const normalizedTokenId = selectedTokenId ?? null;
+    /** Таймеры отложенной инвалидации — очищаются при размонтировании */
+    const timers: ReturnType<typeof setTimeout>[] = [];
 
     const unsubscribe = liveContext.subscribe((event: LiveEvent) => {
       if (event.type === 'new-message') {
@@ -197,13 +199,21 @@ export function useLiveInvalidate({ projectId, selectedTokenId }: UseLiveInvalid
           };
         });
 
-        // Optimistic update строки пользователя в таблице
+        // Optimistic update строки пользователя в таблице (перемещает наверх мгновенно)
         if (userId) {
           updateUserInCache(queryClient, projectId, normalizedTokenId, userId);
         }
 
+        // Статистику инвалидируем сразу — она не влияет на порядок строк
         queryClient.invalidateQueries({ queryKey: statsKey });
-        queryClient.invalidateQueries({ queryKey: ['infinite-users', projectId, normalizedTokenId] });
+
+        // Список пользователей инвалидируем с задержкой — даём БД время обновить
+        // lastInteraction, чтобы refetch вернул правильный порядок и не перезаписал
+        // наш optimistic update старыми данными
+        const usersTimer = setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['infinite-users', projectId, normalizedTokenId] });
+        }, 1500);
+        timers.push(usersTimer);
       }
 
       if (event.type === 'new-user') {
@@ -232,6 +242,7 @@ export function useLiveInvalidate({ projectId, selectedTokenId }: UseLiveInvalid
 
     return () => {
       unsubscribe();
+      timers.forEach(clearTimeout);
     };
   }, [projectId, selectedTokenId, queryClient, liveContext]);
 }
