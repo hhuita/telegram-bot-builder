@@ -110,10 +110,9 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
         try:
             _photos = await bot.get_user_profile_photos(user_id, limit=1)
             if _photos and _photos.photos:
-                _file_id = _photos.photos[0][-1].file_id
-                _file = await bot.get_file(_file_id)
-                _avatar_url = f"https://api.telegram.org/file/bot{bot.token}/{_file.file_path}"
-                logging.info(f"✅ Аватарка получена для {user_id}: {_avatar_url}")
+                # Сохраняем file_id — он постоянный, в отличие от file_path/URL
+                _avatar_url = _photos.photos[0][-1].file_id
+                logging.info(f"✅ Аватарка (file_id) получена для {user_id}")
             else:
                 logging.info(f"ℹ️ У пользователя {user_id} нет аватарки")
             user_data.setdefault(user_id, {})["_avatar_fetched"] = True

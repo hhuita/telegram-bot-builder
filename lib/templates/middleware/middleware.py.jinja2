@@ -44,15 +44,14 @@ async def register_user_middleware(handler, event: types.Message, data: dict):
                     'is_bot': user.is_bot or False,
                 }
 {%- if userDatabaseEnabled %}
-                # Получаем аватарку пользователя
+                # Получаем file_id аватарки пользователя (не URL — он временный)
                 _avatar_url = None
                 try:
                     _photos = await bot.get_user_profile_photos(user_id, limit=1)
                     if _photos and _photos.photos:
-                        _file_id = _photos.photos[0][-1].file_id
-                        _file = await bot.get_file(_file_id)
-                        _avatar_url = f"https://api.telegram.org/file/bot{bot.token}/{_file.file_path}"
-                        logging.info(f"✅ Аватарка получена для {user_id}: {_avatar_url}")
+                        # Сохраняем file_id — он постоянный, в отличие от file_path
+                        _avatar_url = _photos.photos[0][-1].file_id
+                        logging.info(f"✅ Аватарка (file_id) получена для {user_id}")
                     else:
                         logging.info(f"ℹ️ У пользователя {user_id} нет аватарки")
                 except Exception as _e:

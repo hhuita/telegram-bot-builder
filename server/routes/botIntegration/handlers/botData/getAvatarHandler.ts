@@ -108,9 +108,35 @@ export async function getAvatarHandler(req: Request, res: Response): Promise<voi
             return;
         }
 
-        // avatarUrl — полный HTTPS URL, проксируем напрямую
-        console.log(`[avatar] fetching: ${avatarUrl}`);
-        const response = await fetchWithProxy(avatarUrl);
+        // Если avatarUrl — это file_id (не начинается с http), получаем свежий URL через getFile
+        let fetchUrl = avatarUrl;
+        if (!avatarUrl.startsWith('http')) {
+            const tokenToUse = await resolveProjectBotToken(projectId, tokenId);
+            if (!tokenToUse) {
+                res.status(404).json({ message: "Токен бота не найден" });
+                return;
+            }
+            try {
+                const fileResp = await fetchWithProxy(
+                    `https://api.telegram.org/bot${tokenToUse.token}/getFile`,
+                    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file_id: avatarUrl }) }
+                );
+                const fileData = await fileResp.json();
+                if (!fileResp.ok || !fileData.result?.file_path) {
+                    res.status(404).json({ message: "Не удалось получить file_path из Telegram" });
+                    return;
+                }
+                fetchUrl = `https://api.telegram.org/file/bot${tokenToUse.token}/${fileData.result.file_path}`;
+            } catch (e) {
+                console.warn('[avatar] failed to resolve file_id to URL:', e);
+                res.status(404).json({ message: "Не удалось получить аватарку" });
+                return;
+            }
+        }
+
+        // Проксируем файл скрывая токен бота от клиента
+        console.log(`[avatar] fetching avatar for user_id=${userId}`);
+        const response = await fetchWithProxy(fetchUrl);
 
         if (!response.ok) {
             res.status(404).json({ message: "Не удалось получить аватарку" });
