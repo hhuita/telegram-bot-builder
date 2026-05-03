@@ -180,22 +180,28 @@ async def handle_callback_{{ nodeId|safe_name }}(callback_query: types.CallbackQ
     if not os.path.exists(_file_path):
         logging.error(f"❌ Медиафайл не найден: {_file_path} (узел {{ nodeId }})")
         return
-    logging.info(f"📤 Узел {{ nodeId }}: первая отправка файла через FSInputFile, file_id будет получен из ответа")
-    _media_file = FSInputFile(_file_path)
-    _sent_msg = await callback_query.message.answer_{{ mtype }}(_media_file)
-    _new_file_id = _extract_file_id_from_message(_sent_msg, "{{ mtype }}")
-    if _new_file_id:
-        logging.info(f"✅ Узел {{ nodeId }}: получен file_id={_new_file_id[:20]}... для файла {{ url }}")
-        if db_pool:
-            try:
-                async with db_pool.acquire() as _conn:
-                    await _conn.execute(
-                        "UPDATE media_files SET telegram_file_id = $1 WHERE url = $2 AND project_id = $3",
-                        _new_file_id, "{{ url }}", PROJECT_ID
-                    )
-                    logging.info(f"💾 file_id сохранён в БД для {{ url }}")
-            except Exception as _db_err:
-                logging.warning(f"⚠️ Не удалось сохранить file_id в БД: {_db_err}")
+    _cached_fid = _media_file_id_cache.get("{{ url }}")
+    if _cached_fid:
+        logging.info(f"📎 Узел {{ nodeId }}: отправка через in-memory file_id (без перегенерации)")
+        await callback_query.message.answer_{{ mtype }}(_cached_fid)
+    else:
+        logging.info(f"📤 Узел {{ nodeId }}: первая отправка файла через FSInputFile, file_id будет получен из ответа")
+        _media_file = FSInputFile(_file_path)
+        _sent_msg = await callback_query.message.answer_{{ mtype }}(_media_file)
+        _new_file_id = _extract_file_id_from_message(_sent_msg, "{{ mtype }}")
+        if _new_file_id:
+            _media_file_id_cache["{{ url }}"] = _new_file_id
+            logging.info(f"✅ Узел {{ nodeId }}: получен file_id={_new_file_id[:20]}... для файла {{ url }}")
+            if db_pool:
+                try:
+                    async with db_pool.acquire() as _conn:
+                        await _conn.execute(
+                            "UPDATE media_files SET telegram_file_id = $1 WHERE url = $2 AND project_id = $3",
+                            _new_file_id, "{{ url }}", PROJECT_ID
+                        )
+                        logging.info(f"💾 file_id сохранён в БД для {{ url }}")
+                except Exception as _db_err:
+                    logging.warning(f"⚠️ Не удалось сохранить file_id в БД: {_db_err}")
 {%- else %}
     logging.info(f"📤 Узел {{ nodeId }}: первая отправка файла по URL, file_id будет получен из ответа")
     _sent_msg = await callback_query.message.answer_{{ mtype }}("{{ url|e }}")
