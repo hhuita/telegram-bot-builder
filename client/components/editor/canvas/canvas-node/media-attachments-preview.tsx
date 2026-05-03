@@ -7,6 +7,7 @@
  * @module MediaAttachmentsPreview
  */
 
+import { useState } from 'react';
 import { Node } from '@/types/bot';
 import { VideoPreview } from './video-preview';
 
@@ -51,6 +52,47 @@ function getMediaTypeByUrl(url: string): string {
   if (['mp4', 'avi', 'mov', 'webm'].includes(ext)) return 'video';
   if (['mp3', 'wav', 'ogg'].includes(ext)) return 'audio';
   return 'document';
+}
+
+/**
+ * Компонент превью видео с поддержкой обложки.
+ * Если задана обложка — показывает её с кнопкой Play.
+ * При клике переключается на VideoPreview для воспроизведения.
+ * @param props - Свойства компонента
+ * @returns JSX элемент
+ */
+function VideoWithThumbnail({ src, thumbnailUrl }: { src: string; thumbnailUrl?: string }) {
+  const [showVideo, setShowVideo] = useState(false);
+
+  if (!thumbnailUrl || showVideo) {
+    return (
+      <div className="rounded-lg overflow-hidden border-2 border-blue-200 dark:border-blue-700/50">
+        <VideoPreview src={src} />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="rounded-lg overflow-hidden border-2 border-blue-200 dark:border-blue-700/50 relative cursor-pointer"
+      onClick={() => setShowVideo(true)}
+    >
+      <img
+        src={thumbnailUrl}
+        alt="обложка видео"
+        className="w-full h-auto max-h-48 object-cover"
+        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+      />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center">
+          <span className="text-white text-xl ml-1">▶</span>
+        </div>
+      </div>
+      <div className="absolute bottom-1 right-1 bg-black/60 rounded px-1.5 py-0.5">
+        <span className="text-[10px] text-white">🖼 обложка</span>
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -120,30 +162,7 @@ export function MediaAttachmentsPreview({ node }: MediaAttachmentsPreviewProps) 
           const thumbnails = node.data.attachedMediaThumbnails as Record<string, string> | undefined;
           const thumbUrl = thumbnails?.[url];
           return (
-            <div key={url + index} className="rounded-lg overflow-hidden border-2 border-blue-200 dark:border-blue-700/50 relative">
-              {thumbUrl ? (
-                <>
-                  <img
-                    src={thumbUrl}
-                    alt="обложка видео"
-                    className="w-full h-auto max-h-48 object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                  />
-                  {/* Иконка Play поверх обложки */}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center">
-                      <span className="text-white text-xl ml-1">▶</span>
-                    </div>
-                  </div>
-                  {/* Бейдж обложки */}
-                  <div className="absolute bottom-1 right-1 bg-black/60 rounded px-1.5 py-0.5">
-                    <span className="text-[10px] text-white">🖼 обложка</span>
-                  </div>
-                </>
-              ) : (
-                <VideoPreview src={url} />
-              )}
-            </div>
+            <VideoWithThumbnail key={url + index} src={url} thumbnailUrl={thumbUrl} />
           );
         }
 
