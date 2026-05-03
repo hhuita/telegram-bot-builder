@@ -198,8 +198,16 @@ async def handle_callback_{{ nodeId|safe_name }}(callback_query: types.CallbackQ
         await callback_query.message.answer_{{ mtype }}(_cached_fid{{ _thumb_arg }})
     else:
         logging.info(f"📤 Узел {{ nodeId }}: первая отправка файла через FSInputFile, file_id будет получен из ответа")
-{%- if _thumb_val and mtype == 'video' %}
-        logging.info(f"🖼 Узел {{ nodeId }}: обложка видео — {{ 'FSInputFile' if '/uploads/' in _thumb_val else ('file_id' if _thumb_fid else 'URL') }}")
+{%- if mtype == 'video' %}
+{%- if _thumb_fid %}
+        logging.info(f"🖼 Узел {{ nodeId }}: обложка через file_id={{ _thumb_fid }}...")
+{%- elif _thumb_url and '/uploads/' in _thumb_url %}
+        logging.info(f"🖼 Узел {{ nodeId }}: обложка через FSInputFile={{ _thumb_url }}")
+{%- elif _thumb_url %}
+        logging.info(f"🖼 Узел {{ nodeId }}: обложка через URL={{ _thumb_url }}")
+{%- else %}
+        logging.info(f"🖼 Узел {{ nodeId }}: обложка не установлена")
+{%- endif %}
 {%- endif %}
         _media_file = FSInputFile(_file_path)
         _sent_msg = await callback_query.message.answer_{{ mtype }}(_media_file{{ _thumb_arg }})
@@ -219,8 +227,16 @@ async def handle_callback_{{ nodeId|safe_name }}(callback_query: types.CallbackQ
                     logging.warning(f"⚠️ Не удалось сохранить file_id в БД: {_db_err}")
 {%- else %}
     logging.info(f"📤 Узел {{ nodeId }}: первая отправка файла по URL, file_id будет получен из ответа")
-{%- if _thumb_val and mtype == 'video' %}
-    logging.info(f"🖼 Узел {{ nodeId }}: обложка видео — {{ 'FSInputFile' if '/uploads/' in _thumb_val else ('file_id' if _thumb_fid else 'URL') }}")
+{%- if mtype == 'video' %}
+{%- if _thumb_fid %}
+    logging.info(f"🖼 Узел {{ nodeId }}: обложка через file_id={{ _thumb_fid }}...")
+{%- elif _thumb_url and '/uploads/' in _thumb_url %}
+    logging.info(f"🖼 Узел {{ nodeId }}: обложка через FSInputFile={{ _thumb_url }}")
+{%- elif _thumb_url %}
+    logging.info(f"🖼 Узел {{ nodeId }}: обложка через URL={{ _thumb_url }}")
+{%- else %}
+    logging.info(f"🖼 Узел {{ nodeId }}: обложка не установлена")
+{%- endif %}
 {%- endif %}
     _sent_msg = await callback_query.message.answer_{{ mtype }}("{{ url|e }}"{{ _thumb_arg }})
     _new_file_id = _extract_file_id_from_message(_sent_msg, "{{ mtype }}")

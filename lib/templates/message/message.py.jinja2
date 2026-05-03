@@ -350,6 +350,8 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
             logging.info(f"🖼 Узел {{ nodeId }}: обложка через FSInputFile={{ _vid_thumb_url }}")
 {%- elif _vid_thumb_url %}
             logging.info(f"🖼 Узел {{ nodeId }}: обложка через URL={{ _vid_thumb_url }}")
+{%- else %}
+            logging.info(f"🖼 Узел {{ nodeId }}: обложка не установлена")
 {%- endif %}
             _sent_video = await _b.send_video(_target_chat_id, FSInputFile(video_path), caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id{{ _vid_thumb_arg }})
             if _sent_video and _sent_video.video:
@@ -384,6 +386,8 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
             logging.info(f"🖼 Узел {{ nodeId }}: обложка через FSInputFile={{ _vid_thumb_url }}")
 {%- elif _vid_thumb_url %}
             logging.info(f"🖼 Узел {{ nodeId }}: обложка через URL={{ _vid_thumb_url }}")
+{%- else %}
+            logging.info(f"🖼 Узел {{ nodeId }}: обложка не установлена")
 {%- endif %}
             _sent_video = await _b.send_video(_target_chat_id, "{{ videoUrl }}", caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id{{ _vid_thumb_arg }})
             if _sent_video and _sent_video.video:
