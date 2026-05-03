@@ -233,7 +233,36 @@ async def handle_callback_{{ nodeId|safe_name }}(callback_query: types.CallbackQ
     if not _media_group:
         logging.error(f"❌ Все медиафайлы недоступны для узла {{ nodeId }}")
         return
-    await callback_query.message.answer_media_group(_media_group)
+    _sent_group = await callback_query.message.answer_media_group(_media_group)
+    # Сохраняем file_id каждого файла из медиагруппы в БД
+    if _sent_group and db_pool:
+        _media_urls = [{% for url in attachedMedia %}"{{ url|e }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+        for _gi, _gmsg in enumerate(_sent_group):
+            if _gi >= len(_media_urls):
+                break
+            _gurl = _media_urls[_gi]
+            _gfid = None
+            try:
+                if _gmsg.photo:
+                    _gfid = _gmsg.photo[-1].file_id
+                elif _gmsg.video:
+                    _gfid = _gmsg.video.file_id
+                elif _gmsg.audio:
+                    _gfid = _gmsg.audio.file_id
+                elif _gmsg.document:
+                    _gfid = _gmsg.document.file_id
+            except Exception:
+                pass
+            if _gfid:
+                try:
+                    async with db_pool.acquire() as _conn:
+                        await _conn.execute(
+                            "UPDATE media_files SET telegram_file_id = $1 WHERE url = $2 AND project_id = $3",
+                            _gfid, _gurl, PROJECT_ID
+                        )
+                        logging.info(f"💾 file_id сохранён в БД для {_gurl[:40]}")
+                except Exception as _db_err:
+                    logging.warning(f"⚠️ Не удалось сохранить file_id медиагруппы: {_db_err}")
 
 {%- else %}
     # Нет медиафайлов для отправки
