@@ -184,6 +184,7 @@ export function useLiveInvalidate({ projectId, selectedTokenId }: UseLiveInvalid
     const timers: ReturnType<typeof setTimeout>[] = [];
 
     const unsubscribe = liveContext.subscribe((event: LiveEvent) => {
+      console.log('[LiveInvalidate] получено событие:', event.type, 'projectId:', event.projectId);
       if (event.type === 'new-message') {
         const msg = event as NewMessageLiveEvent;
         const userId = msg.data?.userId;
@@ -211,6 +212,7 @@ export function useLiveInvalidate({ projectId, selectedTokenId }: UseLiveInvalid
         // lastInteraction, чтобы refetch вернул правильный порядок и не перезаписал
         // наш optimistic update старыми данными
         const usersTimer = setTimeout(() => {
+          console.log('[LiveInvalidate] invalidateQueries infinite-users', projectId, normalizedTokenId);
           queryClient.invalidateQueries({
             queryKey: ['infinite-users', projectId, normalizedTokenId],
             refetchType: 'all',
