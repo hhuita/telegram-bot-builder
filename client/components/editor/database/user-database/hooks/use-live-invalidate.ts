@@ -93,11 +93,16 @@ export function useLiveInvalidate({ projectId, selectedTokenId }: UseLiveInvalid
     const unsubscribe = liveContext.subscribe((event: NewMessageLiveEvent) => {
       const userId = event.data?.userId;
 
-      // Мгновенный optimistic update статистики — инкрементируем totalInteractions
-      queryClient.setQueryData<UserStats>(statsKey, (old) => ({
-        ...(old ?? {}),
-        totalInteractions: (old?.totalInteractions ?? 0) + 1,
-      }));
+      // Мгновенный optimistic update статистики — инкрементируем totalInteractions и пересчитываем среднее
+      queryClient.setQueryData<UserStats>(statsKey, (old) => {
+        const newTotal = (old?.totalInteractions ?? 0) + 1;
+        const users = old?.totalUsers ?? 1;
+        return {
+          ...(old ?? {}),
+          totalInteractions: newTotal,
+          avgInteractionsPerUser: Math.round((newTotal / users) * 100) / 100,
+        };
+      });
 
       // Мгновенный optimistic update таблицы — обновляем lastInteraction и interactionCount
       if (userId) {
