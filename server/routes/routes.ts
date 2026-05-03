@@ -2176,7 +2176,24 @@ export async function registerRoutes(app: Express, httpServer?: Server): Promise
     const limit = req.query.limit ? parseInt(req.query.limit as string) : null;
     const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
 
-    const selectSql = `
+    // Параметры серверного поиска, фильтрации и сортировки (только для пагинированного режима)
+    const search = req.query.search as string | undefined;
+    const filterActive = req.query.filterActive as string | undefined;
+    const sortBy = req.query.sortBy as string | undefined;
+    const sortDir = req.query.sortDir as string | undefined;
+
+    // Белый список колонок для ORDER BY (защита от SQL injection)
+    const sortColumnMap: Record<string, string> = {
+      lastInteraction: 'u.last_interaction',
+      createdAt: 'u.registered_at',
+      interactionCount: 'u.interaction_count',
+      firstName: 'u.first_name',
+      userName: 'u.username',
+    };
+    const sortColumn = sortColumnMap[sortBy as string] ?? 'u.last_interaction';
+    const sortOrder = sortDir === 'asc' ? 'ASC' : 'DESC';
+
+    const selectBase = `
       SELECT
         ROW_NUMBER() OVER (ORDER BY u.last_interaction DESC) AS id,
         u.user_id::text AS "userId",
@@ -2207,27 +2224,50 @@ export async function registerRoutes(app: Express, httpServer?: Server): Promise
       WHERE u.is_bot = 0
         AND u.project_id = $1
         AND ($2::integer IS NULL OR u.token_id = $2)
-      ORDER BY u.last_interaction DESC
     `;
 
     try {
       if (limit !== null) {
-        // Режим пагинации: возвращаем { users, total, hasMore }
+        // Режим пагинации: строим динамические условия WHERE
+        const params: any[] = [projectId, tokenId];
+        let paramIdx = 3;
+        const conditions: string[] = [];
+
+        if (search) {
+          const searchParam = `%${search}%`;
+          conditions.push(
+            `(u.first_name ILIKE $${paramIdx} OR u.username ILIKE $${paramIdx} OR u.user_id::text ILIKE $${paramIdx})`
+          );
+          params.push(searchParam);
+          paramIdx++;
+        }
+        if (filterActive === 'true') conditions.push('u.is_active = 1');
+        if (filterActive === 'false') conditions.push('u.is_active = 0');
+
+        const whereExtra = conditions.length ? ' AND ' + conditions.join(' AND ') : '';
+
+        const dataSql = `${selectBase}${whereExtra} ORDER BY ${sortColumn} ${sortOrder} LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`;
+        const countSql = `
+          SELECT COUNT(*)::integer AS total FROM bot_users u
+          WHERE u.is_bot = 0 AND u.project_id = $1 AND ($2::integer IS NULL OR u.token_id = $2)${whereExtra}
+        `;
+
+        const dataParams = [...params, limit, offset];
+        const countParams = [...params];
+
         const [dataResult, countResult] = await Promise.all([
-          dbPool.query(`${selectSql} LIMIT $3 OFFSET $4`, [projectId, tokenId, limit, offset]),
-          dbPool.query(
-            `SELECT COUNT(*)::integer AS total FROM bot_users
-             WHERE is_bot = 0 AND project_id = $1 AND ($2::integer IS NULL OR token_id = $2)`,
-            [projectId, tokenId]
-          ),
+          dbPool.query(dataSql, dataParams),
+          dbPool.query(countSql, countParams),
         ]);
+
         const total: number = countResult.rows[0]?.total ?? 0;
         const users = dataResult.rows;
         console.log(`Paginated: project ${projectId}, offset=${offset}, limit=${limit}, total=${total}`);
         return res.json({ users, total, hasMore: offset + users.length < total });
       }
 
-      // Обратная совместимость: возвращаем массив без пагинации
+      // Обратная совместимость: возвращаем массив без пагинации (без фильтров)
+      const selectSql = `${selectBase} ORDER BY u.last_interaction DESC`;
       const result = await dbPool.query(selectSql, [projectId, tokenId]);
       console.log(`Found ${result.rows.length} users for project ${projectId}`);
       res.json(result.rows);

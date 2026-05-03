@@ -7,15 +7,21 @@ import { useUserDatabase, useUserMutations } from '../hooks';
 import { UseUserDatabaseParams, UseUserMutationsParams } from './panel-types';
 
 /**
- * Пропсы для хука useUserDatabasePanelData
+ * Параметры хука useUserDatabasePanelData
  */
 interface UseUserDatabasePanelDataParams extends UseUserDatabaseParams {
   /** Поисковый запрос */
   searchQuery: string;
+  /** Фильтр по активности */
+  filterActive?: boolean | null;
+  /** Поле сортировки */
+  sortField?: string;
+  /** Направление сортировки */
+  sortDirection?: 'asc' | 'desc';
 }
 
 /**
- * Пропсы для хука useUserDatabasePanelMutations
+ * Параметры хука useUserDatabasePanelMutations
  */
 interface UseUserDatabasePanelMutationsParams extends UseUserMutationsParams {
   /** Функция обновления пользователей */
@@ -34,8 +40,6 @@ interface UseUserDatabasePanelDataReturn {
   users: any[];
   /** Статистика */
   stats: any;
-  /** Результаты поиска */
-  searchResults: any[];
   /** Флаг загрузки */
   isLoading: boolean;
   /** Функция обновления пользователей */
@@ -65,26 +69,28 @@ interface UseUserDatabasePanelMutationsReturn {
 }
 
 /**
- * Хук для загрузки данных панели БД
+ * Хук для загрузки данных панели БД с серверными поиском, фильтрацией и сортировкой
  * @param params - Параметры хука
  * @returns Объект с данными и функциями
  */
 export function useUserDatabasePanelData(
   params: UseUserDatabasePanelDataParams
 ): UseUserDatabasePanelDataReturn {
-  const { projectId, selectedTokenId, searchQuery } = params;
+  const { projectId, selectedTokenId, searchQuery, filterActive, sortField, sortDirection } = params;
 
   const data = useUserDatabase({
     projectId,
     selectedTokenId,
     searchQuery,
+    filterActive,
+    sortField,
+    sortDirection,
   });
 
   return {
     project: data.project,
     users: data.users,
     stats: data.stats,
-    searchResults: data.searchResults,
     isLoading: data.isLoading,
     refetchUsers: data.refetchUsers,
     refetchStats: data.refetchStats,

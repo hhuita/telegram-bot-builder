@@ -1,6 +1,7 @@
 /**
  * @fileoverview Хук бесконечной прокрутки для списка пользователей
- * @description Загружает пользователей страницами по 50 с помощью useInfiniteQuery
+ * @description Загружает пользователей страницами по 50 с поддержкой серверного поиска,
+ * фильтрации и сортировки через useInfiniteQuery
  */
 
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -30,6 +31,14 @@ interface UseInfiniteUsersParams {
   projectId: number;
   /** Идентификатор выбранного токена бота */
   selectedTokenId?: number | null;
+  /** Строка поиска по имени, username, user_id */
+  search?: string;
+  /** Фильтр по активности: true — активные, false — неактивные, null — все */
+  filterActive?: boolean | null;
+  /** Поле сортировки */
+  sortBy?: string;
+  /** Направление сортировки */
+  sortDir?: 'asc' | 'desc';
 }
 
 /**
@@ -51,12 +60,12 @@ export interface UseInfiniteUsersResult {
 }
 
 /**
- * Хук бесконечной прокрутки пользователей
+ * Хук бесконечной прокрутки пользователей с серверным поиском, фильтрацией и сортировкой
  * @param params - Параметры хука
  * @returns Объект с данными и функциями управления пагинацией
  */
 export function useInfiniteUsers(params: UseInfiniteUsersParams): UseInfiniteUsersResult {
-  const { projectId, selectedTokenId } = params;
+  const { projectId, selectedTokenId, search, filterActive, sortBy, sortDir } = params;
 
   const basePath = `/api/projects/${projectId}/users`;
 
@@ -68,14 +77,22 @@ export function useInfiniteUsers(params: UseInfiniteUsersParams): UseInfiniteUse
     isLoading,
     refetch,
   } = useInfiniteQuery<UsersPageResponse>({
-    queryKey: ['infinite-users', projectId, selectedTokenId],
+    queryKey: ['infinite-users', projectId, selectedTokenId, search, filterActive, sortBy, sortDir],
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
       const offset = pageParam as number;
-      const url = buildUsersApiUrl(basePath, selectedTokenId, {
+      const extraParams: Record<string, string> = {
         limit: String(PAGE_SIZE),
         offset: String(offset),
-      });
+      };
+      if (search) extraParams.search = search;
+      if (filterActive !== null && filterActive !== undefined) {
+        extraParams.filterActive = String(filterActive);
+      }
+      if (sortBy) extraParams.sortBy = sortBy;
+      if (sortDir) extraParams.sortDir = sortDir;
+
+      const url = buildUsersApiUrl(basePath, selectedTokenId, extraParams);
       const response = await fetch(url, { credentials: 'include' });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return response.json() as Promise<UsersPageResponse>;

@@ -66,7 +66,6 @@ export function UserDatabasePanel(props: UserDatabasePanelProps): React.JSX.Elem
     project,
     users,
     stats,
-    searchResults,
     isLoading,
     refetchUsers,
     refetchStats,
@@ -77,6 +76,9 @@ export function UserDatabasePanel(props: UserDatabasePanelProps): React.JSX.Elem
     projectId,
     selectedTokenId: resolvedSelectedTokenId,
     searchQuery,
+    filterActive,
+    sortField,
+    sortDirection,
   });
 
   const {
@@ -120,13 +122,9 @@ export function UserDatabasePanel(props: UserDatabasePanelProps): React.JSX.Elem
 
   const filteredAndSortedUsers = useFilteredAndSortedUsers({
     users,
-    searchResults,
-    searchQuery,
     filterActive,
     filterPremium,
     filterBlocked: null,
-    sortField,
-    sortDirection,
   });
 
   const { handleUserStatusToggle } = useUserDatabasePanelHandlers(

@@ -14,8 +14,14 @@ export interface UseUserDatabaseParams {
   projectId: number;
   /** Идентификатор выбранного токена бота */
   selectedTokenId?: number | null;
-  /** Поисковый запрос */
+  /** Поисковый запрос (передаётся на сервер) */
   searchQuery: string;
+  /** Фильтр по активности: true — активные, false — неактивные, null — все */
+  filterActive?: boolean | null;
+  /** Поле сортировки */
+  sortField?: string;
+  /** Направление сортировки */
+  sortDirection?: 'asc' | 'desc';
 }
 
 /**
@@ -28,8 +34,6 @@ export interface UseUserDatabaseReturn {
   users: UserBotData[];
   /** Статистика пользователей */
   stats: UserStats;
-  /** Результаты поиска пользователей */
-  searchResults: UserBotData[];
   /** Общее состояние загрузки */
   isLoading: boolean;
   /** Состояние загрузки пользователей */
