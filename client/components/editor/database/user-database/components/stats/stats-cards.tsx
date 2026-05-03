@@ -95,8 +95,8 @@ function formatStatValue(value: number | undefined): string {
   if (value === undefined || value === null) return '0';
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
   if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
-  // Округляем дробные числа до 1 знака
-  if (!Number.isInteger(value)) return value.toFixed(1);
+  // Округляем дробные числа до 2 знаков
+  if (!Number.isInteger(value)) return value.toFixed(2);
   return String(value);
 }
 
