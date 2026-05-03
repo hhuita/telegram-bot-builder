@@ -2172,33 +2172,53 @@ export async function registerRoutes(app: Express, httpServer?: Server): Promise
       }
     }
 
+    // Параметры пагинации: если limit не передан — обратная совместимость (массив)
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : null;
+    const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+
+    const selectSql = `
+      SELECT
+        ROW_NUMBER() OVER (ORDER BY last_interaction DESC) AS id,
+        user_id::text AS "userId",
+        username AS "userName",
+        first_name AS "firstName",
+        last_name AS "lastName",
+        avatar_url AS "avatarUrl",
+        registered_at AS "registeredAt",
+        registered_at AS "createdAt",
+        last_interaction AS "lastInteraction",
+        COALESCE(interaction_count, 0)::integer AS "interactionCount",
+        user_data AS "userData",
+        CASE WHEN is_active = 1 THEN TRUE ELSE FALSE END AS "isActive",
+        FALSE AS "isPremium",
+        FALSE AS "isBlocked",
+        CASE WHEN is_bot = 1 THEN TRUE ELSE FALSE END AS "isBot"
+      FROM bot_users
+      WHERE is_bot = 0
+        AND project_id = $1
+        AND ($2::integer IS NULL OR token_id = $2)
+      ORDER BY last_interaction DESC
+    `;
+
     try {
-      console.log(`Fetching users for project ${projectId}`);
+      if (limit !== null) {
+        // Режим пагинации: возвращаем { users, total, hasMore }
+        const [dataResult, countResult] = await Promise.all([
+          dbPool.query(`${selectSql} LIMIT $3 OFFSET $4`, [projectId, tokenId, limit, offset]),
+          dbPool.query(
+            `SELECT COUNT(*)::integer AS total FROM bot_users
+             WHERE is_bot = 0 AND project_id = $1 AND ($2::integer IS NULL OR token_id = $2)`,
+            [projectId, tokenId]
+          ),
+        ]);
+        const total: number = countResult.rows[0]?.total ?? 0;
+        const users = dataResult.rows;
+        console.log(`Paginated: project ${projectId}, offset=${offset}, limit=${limit}, total=${total}`);
+        return res.json({ users, total, hasMore: offset + users.length < total });
+      }
 
-      const result = await dbPool.query(`
-        SELECT
-          ROW_NUMBER() OVER (ORDER BY last_interaction DESC) AS id,
-          user_id::text AS "userId",
-          username AS "userName",
-          first_name AS "firstName",
-          last_name AS "lastName",
-          avatar_url AS "avatarUrl",
-          registered_at AS "registeredAt",
-          registered_at AS "createdAt",
-          last_interaction AS "lastInteraction",
-          COALESCE(interaction_count, 0)::integer AS "interactionCount",
-          user_data AS "userData",
-          CASE WHEN is_active = 1 THEN TRUE ELSE FALSE END AS "isActive",
-          FALSE AS "isPremium",
-          FALSE AS "isBlocked",
-          CASE WHEN is_bot = 1 THEN TRUE ELSE FALSE END AS "isBot"
-        FROM bot_users
-        WHERE is_bot = 0
-          AND project_id = $1
-          AND ($2::integer IS NULL OR token_id = $2)
-        ORDER BY last_interaction DESC
-      `, [projectId, tokenId]);
-
+      // Обратная совместимость: возвращаем массив без пагинации
+      const result = await dbPool.query(selectSql, [projectId, tokenId]);
       console.log(`Found ${result.rows.length} users for project ${projectId}`);
       res.json(result.rows);
     } catch (error) {
@@ -2208,7 +2228,7 @@ export async function registerRoutes(app: Express, httpServer?: Server): Promise
         const users = await storage.getUserBotDataByProject(parseInt(req.params.id), tokenId);
         const projectId = parseInt(req.params.id);
         console.log(`Found ${users.length} users for project ${projectId} from fallback`);
-        res.json(users);
+        res.json(limit !== null ? { users, total: users.length, hasMore: false } : users);
       } catch (fallbackError) {
         res.status(500).json({ message: "Failed to fetch user data" });
       }

@@ -88,4 +88,10 @@ export interface DatabaseContentProps {
   onProjectChange?: (projectId: number) => void;
   /** Флаг сохранения входящих медиафайлов (0 = выключено, 1 = включено) */
   saveIncomingMedia?: number | null;
+  /** Загрузить следующую страницу пользователей */
+  fetchNextPage?: () => void;
+  /** Есть ли следующая страница */
+  hasNextPage?: boolean;
+  /** Идёт ли загрузка следующей страницы */
+  isFetchingNextPage?: boolean;
 }

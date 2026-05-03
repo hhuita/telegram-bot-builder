@@ -23,6 +23,9 @@ type DatabaseTabsProps = Pick<
   | 'deleteUserMutation'
   | 'visibleColumns'
   | 'projectId'
+  | 'fetchNextPage'
+  | 'hasNextPage'
+  | 'isFetchingNextPage'
 >;
 
 /**
@@ -54,6 +57,9 @@ export function DatabaseTabs(props: DatabaseTabsProps): React.JSX.Element {
         deleteUserMutation={restProps.deleteUserMutation}
         onOpenUserDetailsPanel={restProps.onOpenUserDetailsPanel}
         onOpenDialogPanel={restProps.onOpenDialogPanel}
+        fetchNextPage={restProps.fetchNextPage}
+        hasNextPage={restProps.hasNextPage}
+        isFetchingNextPage={restProps.isFetchingNextPage}
       />
       <ResponsesTabContent
         users={restProps.filteredAndSortedUsers}

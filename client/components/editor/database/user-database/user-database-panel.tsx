@@ -69,6 +69,9 @@ export function UserDatabasePanel(props: UserDatabasePanelProps): React.JSX.Elem
     isLoading,
     refetchUsers,
     refetchStats,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   } = useUserDatabasePanelData({
     projectId,
     selectedTokenId: resolvedSelectedTokenId,
@@ -197,6 +200,9 @@ export function UserDatabasePanel(props: UserDatabasePanelProps): React.JSX.Elem
         allProjects={allProjects}
         onProjectChange={onProjectChange}
         saveIncomingMedia={saveIncomingMedia}
+        fetchNextPage={fetchNextPage}
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
         />
       </div>
     </UserMessagesLiveProvider>

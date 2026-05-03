@@ -42,6 +42,12 @@ interface UseUserDatabasePanelDataReturn {
   refetchUsers: () => void;
   /** Функция обновления статистики */
   refetchStats: () => void;
+  /** Загрузить следующую страницу */
+  fetchNextPage: () => void;
+  /** Есть ли следующая страница */
+  hasNextPage: boolean;
+  /** Идёт ли загрузка следующей страницы */
+  isFetchingNextPage: boolean;
 }
 
 /**
@@ -82,6 +88,9 @@ export function useUserDatabasePanelData(
     isLoading: data.isLoading,
     refetchUsers: data.refetchUsers,
     refetchStats: data.refetchStats,
+    fetchNextPage: data.fetchNextPage,
+    hasNextPage: data.hasNextPage,
+    isFetchingNextPage: data.isFetchingNextPage,
   };
 }
 

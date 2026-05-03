@@ -24,7 +24,7 @@ export interface UseUserDatabaseParams {
 export interface UseUserDatabaseReturn {
   /** Данные проекта */
   project?: BotProject;
-  /** Список пользователей */
+  /** Список пользователей (все загруженные страницы) */
   users: UserBotData[];
   /** Статистика пользователей */
   stats: UserStats;
@@ -40,4 +40,10 @@ export interface UseUserDatabaseReturn {
   refetchUsers: () => void;
   /** Функция обновления статистики */
   refetchStats: () => void;
+  /** Загрузить следующую страницу пользователей */
+  fetchNextPage: () => void;
+  /** Есть ли следующая страница */
+  hasNextPage: boolean;
+  /** Идёт ли загрузка следующей страницы */
+  isFetchingNextPage: boolean;
 }

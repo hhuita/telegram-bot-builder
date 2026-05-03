@@ -5,7 +5,7 @@
 
 import { UseUserDatabaseParams, UseUserDatabaseReturn } from './types';
 import { useProject } from './queries/use-project';
-import { useUsers } from './queries/use-users';
+import { useInfiniteUsers } from './queries/use-infinite-users';
 import { useStats } from './queries/use-stats';
 import { useSearchUsers } from './queries/use-search-users';
 
@@ -18,7 +18,14 @@ export function useUserDatabase(params: UseUserDatabaseParams): UseUserDatabaseR
   const { projectId, selectedTokenId, searchQuery } = params;
 
   const { project } = useProject({ projectId });
-  const { users, isUsersLoading, refetchUsers } = useUsers({ projectId, selectedTokenId });
+  const {
+    allUsers: users,
+    isLoading: isUsersLoading,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteUsers({ projectId, selectedTokenId });
   const { stats, isStatsLoading, refetchStats } = useStats({ projectId, selectedTokenId });
   const { searchResults } = useSearchUsers({ projectId, selectedTokenId, searchQuery });
   const isLoading = isUsersLoading || isStatsLoading;
@@ -31,7 +38,10 @@ export function useUserDatabase(params: UseUserDatabaseParams): UseUserDatabaseR
     isLoading,
     isUsersLoading,
     isStatsLoading,
-    refetchUsers,
+    refetchUsers: refetch,
     refetchStats,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   };
 }
