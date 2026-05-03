@@ -195,7 +195,9 @@ app.use((req, res, next) => {
   // это обслуживает как API, так и клиент.
   // Это единственный порт, который не заблокирован брандмауэром.
   const port = process.env.PORT || 5000;
-  const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
+  // На Windows 'localhost' резолвится в ::1 (IPv6), а браузер коннектится к 127.0.0.1 (IPv4).
+  // Используем 0.0.0.0 в dev чтобы слушать на всех интерфейсах включая IPv4.
+  const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '0.0.0.0';
   httpServer.listen(Number(port), host, () => {
     // Отображаем localhost в логах даже при привязке к 0.0.0.0 для внешних подключений
     const displayHost = host === '0.0.0.0' ? 'localhost' : host;
