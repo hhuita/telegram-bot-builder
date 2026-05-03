@@ -234,6 +234,7 @@ export function MediaFileCard({
           <ThumbnailSelector
             currentThumbnailUrl={thumbnailUrl}
             projectId={projectId}
+            videoFileId={mediaFileId}
             onThumbnailSet={(thumbUrl) => onThumbnailSet?.(url, thumbUrl)}
           />
         </div>

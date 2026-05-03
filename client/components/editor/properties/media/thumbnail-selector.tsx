@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Upload, X } from "lucide-react";
 import { MediaManager } from "./media-manager";
+import { apiRequest } from "@/queryClient";
 import type { MediaFile } from "@shared/schema";
 
 /** Пропсы компонента ThumbnailSelector */
@@ -21,6 +22,12 @@ export interface ThumbnailSelectorProps {
   currentThumbnailUrl?: string | null;
   /** ID проекта для загрузки фото */
   projectId: number;
+  /**
+   * ID видеофайла в БД (опционально).
+   * Если передан — при установке обложки сбрасывается telegramFileId видео,
+   * чтобы бот переотправил видео через FSInputFile и Telegram принял обложку.
+   */
+  videoFileId?: number;
   /** Callback при установке/сбросе обложки — передаёт URL обложки или null */
   onThumbnailSet?: (thumbnailUrl: string | null) => void;
 }
@@ -34,6 +41,7 @@ export interface ThumbnailSelectorProps {
 export function ThumbnailSelector({
   currentThumbnailUrl,
   projectId,
+  videoFileId,
   onThumbnailSet,
 }: ThumbnailSelectorProps) {
   /** Флаг открытия MediaManager */
@@ -47,20 +55,42 @@ export function ThumbnailSelector({
   const hasThumbnail = !!currentThumbnailUrl;
 
   /**
-   * Устанавливает обложку по объекту MediaFile — берёт URL файла
+   * Сбрасывает telegramFileId видео в БД, чтобы бот переотправил его через FSInputFile.
+   * Telegram принимает thumbnail= только при первой загрузке файла.
+   */
+  const resetVideoFileId = async () => {
+    if (!videoFileId) return;
+    try {
+      await apiRequest('PUT', `/api/media/${videoFileId}`, { telegramFileId: null });
+    } catch (e) {
+      console.warn('Не удалось сбросить telegramFileId видео:', e);
+    }
+  };
+
+  /** URL для превью */
+  const previewUrl = currentThumbnailUrl;
+  /** Показывать кнопку «Убрать» если есть обложка */
+  const hasThumbnail = !!currentThumbnailUrl;
+
+  /**
+   * Устанавливает обложку по объекту MediaFile — берёт URL файла.
+   * Сбрасывает telegramFileId видео чтобы Telegram принял обложку при следующей отправке.
    * @param file - Выбранный медиафайл
    */
-  const handleSelectFile = (file: MediaFile) => {
+  const handleSelectFile = async (file: MediaFile) => {
+    await resetVideoFileId();
     onThumbnailSet?.(file.url);
     setIsOpen(false);
   };
 
   /**
-   * Применяет обложку по введённому URL напрямую
+   * Применяет обложку по введённому URL напрямую.
+   * Сбрасывает telegramFileId видео чтобы Telegram принял обложку при следующей отправке.
    */
-  const handleApplyUrl = () => {
+  const handleApplyUrl = async () => {
     const trimmed = urlInput.trim();
     if (!trimmed) return;
+    await resetVideoFileId();
     onThumbnailSet?.(trimmed);
     setUrlInput("");
   };
