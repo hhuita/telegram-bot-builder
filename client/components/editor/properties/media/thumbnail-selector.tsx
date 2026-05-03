@@ -128,44 +128,37 @@ export function ThumbnailSelector({
   return (
     <div className="mt-2 space-y-2 border-t border-slate-200/40 dark:border-slate-700/40 pt-2">
       {/* Заголовок секции */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center">
         <span className="text-xs font-medium text-slate-600 dark:text-slate-400">🖼 Обложка видео</span>
-        {hasThumbnail && (
-          <button
-            onClick={handleRemove}
-            className="text-xs text-red-500 hover:text-red-600 transition-colors"
-          >
-            Убрать
-          </button>
-        )}
       </div>
 
-      {/* Превью текущей обложки */}
+      {/* Превью текущей обложки — в стиле мини-карточки как у медиафайлов */}
       {previewUrl && (
-        <div className="relative w-full rounded-lg overflow-hidden border border-slate-200/60 dark:border-slate-700/60">
-          {previewUrl.startsWith('{') && previewUrl.endsWith('}') ? (
-            /* Переменная — показываем бейдж вместо img */
-            <div className="flex items-center gap-2 p-2 bg-amber-50/50 dark:bg-amber-900/20">
-              <span className="text-base">🖼️</span>
-              <span className="text-xs font-mono text-amber-800 dark:text-amber-200 truncate">{previewUrl}</span>
-            </div>
-          ) : (
-            <>
+        <div className="relative flex items-center gap-3 rounded-lg border border-slate-200/60 dark:border-slate-700/60 bg-slate-50/50 dark:bg-slate-800/30 p-2">
+          {/* Мини-квадрат с картинкой */}
+          <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-slate-200 dark:bg-slate-700">
+            {previewUrl.startsWith('{') && previewUrl.endsWith('}') ? (
+              <div className="w-full h-full flex items-center justify-center">
+                <span className="text-lg">🖼️</span>
+              </div>
+            ) : (
               <img
                 src={previewUrl}
                 alt="обложка"
-                className="w-full h-20 object-cover"
+                className="w-full h-full object-cover"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
-              {/* URL обложки под картинкой */}
-              <div className="px-2 py-1 bg-slate-900/60">
-                <p className="text-[10px] font-mono text-slate-300 truncate">{previewUrl}</p>
-              </div>
-            </>
-          )}
+            )}
+          </div>
+          {/* Название и URL */}
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">Обложка</p>
+            <p className="text-[10px] font-mono text-slate-500 dark:text-slate-400 truncate">{previewUrl}</p>
+          </div>
+          {/* Кнопка удаления */}
           <button
             onClick={handleRemove}
-            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors"
+            className="w-5 h-5 rounded-full bg-red-500/80 hover:bg-red-600 flex items-center justify-center flex-shrink-0 transition-colors"
           >
             <X className="w-3 h-3 text-white" />
           </button>
