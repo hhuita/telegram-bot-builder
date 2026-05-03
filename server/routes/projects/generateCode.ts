@@ -135,6 +135,28 @@ export async function handleGenerateCode(req: Request, res: Response): Promise<v
       }
     }
 
+    // Собираем обложки видео (thumbnailMediaId → telegramFileId обложки)
+    const thumbnailFileIds: Record<string, string> = {};
+    if (mediaUrls.size > 0) {
+      try {
+        const mediaFilesWithIds = await storage.getMediaFilesByUrls(Array.from(mediaUrls), projectId);
+        for (const mf of mediaFilesWithIds) {
+          if (mf.thumbnailMediaId) {
+            // Получаем запись обложки по ID
+            const thumbFile = await storage.getMediaFile(mf.thumbnailMediaId);
+            if (thumbFile?.telegramFileId) {
+              thumbnailFileIds[mf.url] = thumbFile.telegramFileId;
+            }
+          }
+        }
+        if (Object.keys(thumbnailFileIds).length > 0) {
+          console.log(`[Generate] Найдено ${Object.keys(thumbnailFileIds).length} обложек видео`);
+        }
+      } catch (err) {
+        console.warn('[Generate] Не удалось получить thumbnailFileIds:', err);
+      }
+    }
+
     // Генерируем код
     const generatePythonCode = await loadGenerator();
     const code = generatePythonCode(botDataForGenerator, {
@@ -144,6 +166,7 @@ export async function handleGenerateCode(req: Request, res: Response): Promise<v
       enableLogging,
       projectId,
       telegramFileIds,
+      thumbnailFileIds,
     });
 
     // Логирование результата

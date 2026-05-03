@@ -52,6 +52,7 @@
 | `messageSendRecipients` | `MessageSendRecipient[]` | `[]` | Список дополнительных получателей сообщения |
 | `saveMessageIdTo` | `string` | - | Имя переменной для сохранения ID отправленного сообщения |
 | `state` | `FSMContext` | `None` | Опциональный FSM контекст (state: FSMContext = None). Используется для чтения/записи данных между переходами. |
+| `thumbnailFileIds` | `Record<string, string>` | - | Словарь обложек видео: ключ — URL видео, значение — Telegram file_id обложки. Передаётся как `thumbnail=` в `send_video`. |
 
 ## Тип MessageSendRecipient
 

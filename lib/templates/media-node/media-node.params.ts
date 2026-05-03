@@ -40,4 +40,9 @@ export interface MediaNodeTemplateParams {
    * Если для URL есть file_id — отправляем через него напрямую.
    */
   telegramFileIds?: Record<string, string>;
+  /**
+   * Словарь обложек видео: ключ — URL видео, значение — Telegram file_id обложки.
+   * Передаётся как thumbnail= в answer_video при первой отправке.
+   */
+  thumbnailFileIds?: Record<string, string>;
 }

@@ -117,6 +117,11 @@ export interface GeneratePythonCodeOptions {
    * Передаётся в генератор узлов для статического вшивания в код.
    */
   telegramFileIds?: Record<string, string>;
+  /**
+   * Словарь обложек видео: ключ — URL видео, значение — Telegram file_id обложки.
+   * Передаётся как thumbnail= в send_video / answer_video.
+   */
+  thumbnailFileIds?: Record<string, string>;
 }
 
 // ---------------------------------------------------------------------------
@@ -169,6 +174,7 @@ function buildGenerationContext(
     webhookPort = null,
     saveIncomingMedia = false,
     telegramFileIds = {},
+    thumbnailFileIds = {},
   } = options;
 
   const genOptions: GenerationOptions = {
@@ -182,6 +188,7 @@ function buildGenerationContext(
     webhookPort,
     saveIncomingMedia,
     telegramFileIds,
+    thumbnailFileIds,
   };
 
   const context = createGenerationContext(botData, botName, groups, genOptions);
@@ -282,7 +289,8 @@ function generateCodeSections(
     nodes,
     userDatabaseEnabled,
     !!context.options.enableComments,
-    context.options.telegramFileIds || {}
+    context.options.telegramFileIds || {},
+    context.options.thumbnailFileIds || {}
   );
 
   // --- allReferencedNodeIds (теперь часть контекста секции) ---

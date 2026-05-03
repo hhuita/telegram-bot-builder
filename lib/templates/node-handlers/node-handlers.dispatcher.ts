@@ -189,7 +189,8 @@ export function generateNodeHandlers(
   nodes: Node[],
   userDatabaseEnabled: boolean,
   enableComments: boolean = true,
-  telegramFileIds: Record<string, string> = {}
+  telegramFileIds: Record<string, string> = {},
+  thumbnailFileIds: Record<string, string> = {}
 ): string {
   // Собираем код в массив строк
   const codeLines: string[] = [];
@@ -261,6 +262,7 @@ export function generateNodeHandlers(
         enableDynamicButtons: node.data?.enableDynamicButtons ?? false,
         dynamicButtons: node.data?.dynamicButtons as DynamicButtonsConfig | undefined,
         telegramFileIds: { ...(telegramFileIds || {}), ...((node.data as any)?.telegramFileIds || {}) },
+        thumbnailFileIds: { ...(thumbnailFileIds || {}), ...((node.data as any)?.thumbnailFileIds || {}) },
       };
   };
 
@@ -329,6 +331,8 @@ export function generateNodeHandlers(
       messageSendRecipients: (node.data as any)?.messageSendRecipients || [],
       /** Кэшированные Telegram file_id для медиафайлов узла */
       telegramFileIds: { ...(telegramFileIds || {}), ...((node.data as any)?.telegramFileIds || {}) },
+      /** Словарь обложек видео для media-ноды */
+      thumbnailFileIds: { ...(thumbnailFileIds || {}), ...((node.data as any)?.thumbnailFileIds || {}) },
     }),
   };
 

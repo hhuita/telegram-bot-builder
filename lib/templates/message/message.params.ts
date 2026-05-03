@@ -110,6 +110,11 @@ export interface MessageTemplateParams {
    * Если для URL есть file_id — отправляем через него напрямую.
    */
   telegramFileIds?: Record<string, string>;
+  /**
+   * Словарь обложек видео: ключ — URL видео, значение — Telegram file_id обложки.
+   * Передаётся как thumbnail= в send_video при первой отправке.
+   */
+  thumbnailFileIds?: Record<string, string>;
   /** URL документа */
   documentUrl?: string;
   /** URL видео */

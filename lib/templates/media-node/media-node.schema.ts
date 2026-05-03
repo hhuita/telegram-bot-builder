@@ -38,6 +38,11 @@ export const mediaNodeParamsSchema = z.object({
    * Ключ — URL или путь медиафайла, значение — Telegram file_id.
    */
   telegramFileIds: z.record(z.string(), z.string()).optional().default({}),
+  /**
+   * Словарь обложек видео: ключ — URL видео, значение — Telegram file_id обложки.
+   * Передаётся как thumbnail= в answer_video при первой отправке.
+   */
+  thumbnailFileIds: z.record(z.string(), z.string()).optional().default({}),
 });
 
 /** Тип параметров медиа-ноды (выведен из схемы) */

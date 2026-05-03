@@ -41,6 +41,11 @@ export interface GenerationOptions {
    * Ключ — URL файла, значение — Telegram file_id.
    */
   telegramFileIds?: Record<string, string>;
+  /**
+   * Словарь обложек видео: ключ — URL видео, значение — Telegram file_id обложки.
+   * Если для видео есть обложка — передаётся как thumbnail= в send_video.
+   */
+  thumbnailFileIds?: Record<string, string>;
 }
 
 /**

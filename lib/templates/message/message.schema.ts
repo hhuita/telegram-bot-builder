@@ -86,6 +86,11 @@ export const messageParamsSchema = z.object({
    * Ключ — URL или путь медиафайла, значение — Telegram file_id.
    */
   telegramFileIds: z.record(z.string(), z.string()).optional().default({}),
+  /**
+   * Словарь обложек видео: ключ — URL видео, значение — Telegram file_id обложки.
+   * Передаётся как thumbnail= в send_video при первой отправке.
+   */
+  thumbnailFileIds: z.record(z.string(), z.string()).optional().default({}),
   /** URL документа */
   documentUrl: z.string().optional(),
   /** URL видео */

@@ -14,6 +14,7 @@
 | `autoTransitionTo`    | `string`   | ❌           | ID целевого узла автоперехода         |
 | `messageSendRecipients` | `MediaSendRecipient[]` | ❌ | Список получателей (если пустой — отправка пользователю) |
 | `telegramFileIds`     | `Record<string, string>` | ❌ | Словарь кэшированных Telegram file_id. Ключ — URL файла, значение — file_id. При наличии — отправка через file_id напрямую без загрузки файла. |
+| `thumbnailFileIds`    | `Record<string, string>` | ❌ | Словарь обложек видео: ключ — URL видео, значение — Telegram file_id обложки. Передаётся как `thumbnail=` в `answer_video`. |
 | `state`               | `FSMContext` | ❌         | Опциональный FSM контекст (state: FSMContext = None). Используется для чтения/записи данных между переходами. |
 
 ## Тип MediaSendRecipient

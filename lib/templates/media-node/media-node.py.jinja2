@@ -170,11 +170,13 @@ async def handle_callback_{{ nodeId|safe_name }}(callback_query: types.CallbackQ
 {%- else %}
 {%- set mtype = get_media_type(url) | trim %}
 {%- set cached_file_id = (telegramFileIds or {})[url] if telegramFileIds and url in telegramFileIds else '' %}
+{%- set _thumb_fid = (thumbnailFileIds or {})[url] if thumbnailFileIds and url in thumbnailFileIds else '' %}
+{%- set _thumb_arg = ', thumbnail="' + _thumb_fid + '"' if (_thumb_fid and mtype == 'video') else '' %}
     # Отправка одиночного медиафайла
 {%- if cached_file_id %}
     # Отправка через кэшированный Telegram file_id (повторная отправка)
     logging.info(f"📎 Узел {{ nodeId }}: отправка через кэшированный file_id={{ cached_file_id }}...")
-    await callback_query.message.answer_{{ mtype }}("{{ cached_file_id }}")
+    await callback_query.message.answer_{{ mtype }}("{{ cached_file_id }}"{{ _thumb_arg }})
 {%- elif '/uploads/' in url %}
     _file_path = get_upload_file_path("{{ url }}")
     if not os.path.exists(_file_path):
@@ -183,11 +185,11 @@ async def handle_callback_{{ nodeId|safe_name }}(callback_query: types.CallbackQ
     _cached_fid = _media_file_id_cache.get("{{ url }}")
     if _cached_fid:
         logging.info(f"📎 Узел {{ nodeId }}: отправка через in-memory file_id (без перегенерации)")
-        await callback_query.message.answer_{{ mtype }}(_cached_fid)
+        await callback_query.message.answer_{{ mtype }}(_cached_fid{{ _thumb_arg }})
     else:
         logging.info(f"📤 Узел {{ nodeId }}: первая отправка файла через FSInputFile, file_id будет получен из ответа")
         _media_file = FSInputFile(_file_path)
-        _sent_msg = await callback_query.message.answer_{{ mtype }}(_media_file)
+        _sent_msg = await callback_query.message.answer_{{ mtype }}(_media_file{{ _thumb_arg }})
         _new_file_id = _extract_file_id_from_message(_sent_msg, "{{ mtype }}")
         if _new_file_id:
             _media_file_id_cache["{{ url }}"] = _new_file_id
@@ -204,7 +206,7 @@ async def handle_callback_{{ nodeId|safe_name }}(callback_query: types.CallbackQ
                     logging.warning(f"⚠️ Не удалось сохранить file_id в БД: {_db_err}")
 {%- else %}
     logging.info(f"📤 Узел {{ nodeId }}: первая отправка файла по URL, file_id будет получен из ответа")
-    _sent_msg = await callback_query.message.answer_{{ mtype }}("{{ url|e }}")
+    _sent_msg = await callback_query.message.answer_{{ mtype }}("{{ url|e }}"{{ _thumb_arg }})
     _new_file_id = _extract_file_id_from_message(_sent_msg, "{{ mtype }}")
     if _new_file_id:
         _media_file_id_cache["{{ url }}"] = _new_file_id

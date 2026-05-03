@@ -1479,8 +1479,134 @@ test('R08', 'смешанный сценарий: один файл с file_id, 
   syntax(code, 'r08');
 });
 
-const passed = results.filter(r => r.passed).length;
-const failed = results.filter(r => !r.passed).length;
+// ─────────────────────────────────────────────────────────────────────────────
+// БЛОК S: Обложка видео (thumbnail)
+// ─────────────────────────────────────────────────────────────────────────────
+
+console.log('── Блок S: Обложка видео (thumbnail) ────────────────────────────');
+
+// S01: thumbnail передаётся в send_video если есть thumbnailFileIds
+test('S01', 'thumbnailFileIds → thumbnail= в send_video (message-нода)', () => {
+  const p = makeProject([makeMessageNode('msg1', 'Видео', {
+    videoUrl: '/uploads/video.mp4',
+    isLocalVideoUrl: true,
+  })]);
+  const code = generatePythonCode(p as any, {
+    botName: 'ThumbTest',
+    userDatabaseEnabled: false,
+    enableComments: false,
+    telegramFileIds: {},
+    thumbnailFileIds: { '/uploads/video.mp4': 'AgACBQADthumb123' },
+  });
+  ok(code.includes('thumbnail='), 'thumbnail= должен быть в send_video');
+  ok(code.includes('AgACBQADthumb123'), 'file_id обложки должен быть в коде');
+});
+
+// S02: без thumbnailFileIds — thumbnail= НЕ добавляется
+test('S02', 'без thumbnailFileIds → thumbnail= НЕ добавляется', () => {
+  const p = makeProject([makeMessageNode('msg1', 'Видео', {
+    videoUrl: '/uploads/video.mp4',
+    isLocalVideoUrl: true,
+  })]);
+  const code = generatePythonCode(p as any, {
+    botName: 'ThumbTest2',
+    userDatabaseEnabled: false,
+    enableComments: false,
+  });
+  ok(!code.includes('thumbnail='), 'thumbnail= НЕ должен быть без thumbnailFileIds');
+});
+
+// S03: синтаксис Python OK с thumbnail
+test('S03', 'синтаксис Python OK — send_video с thumbnail', () => {
+  const p = makeProject([makeMessageNode('msg1', 'Видео', {
+    videoUrl: '/uploads/video.mp4',
+    isLocalVideoUrl: true,
+  })]);
+  const code = generatePythonCode(p as any, {
+    botName: 'ThumbTest3',
+    userDatabaseEnabled: false,
+    enableComments: false,
+    thumbnailFileIds: { '/uploads/video.mp4': 'AgACBQADthumb123' },
+  });
+  syntax(code, 's03');
+});
+
+// S04: thumbnail для media-ноды
+test('S04', 'thumbnailFileIds → thumbnail= в answer_video (media-нода)', () => {
+  const p = makeProject([makeMediaNode('m1', ['/uploads/video.mp4'])]);
+  const code = generatePythonCode(p as any, {
+    botName: 'ThumbTest4',
+    userDatabaseEnabled: false,
+    enableComments: false,
+    thumbnailFileIds: { '/uploads/video.mp4': 'AgACBQADthumb456' },
+  });
+  ok(code.includes('thumbnail=') || code.includes('AgACBQADthumb456'), 'thumbnail должен быть в answer_video');
+});
+
+// S05: синтаксис OK — media-нода с thumbnail
+test('S05', 'синтаксис Python OK — answer_video с thumbnail (media-нода)', () => {
+  const p = makeProject([makeMediaNode('m1', ['/uploads/video.mp4'])]);
+  const code = generatePythonCode(p as any, {
+    botName: 'ThumbTest5',
+    userDatabaseEnabled: false,
+    enableComments: false,
+    thumbnailFileIds: { '/uploads/video.mp4': 'AgACBQADthumb456' },
+  });
+  syntax(code, 's05');
+});
+
+// S06: thumbnail только для видео, не для фото
+test('S06', 'thumbnail НЕ добавляется для фото', () => {
+  const p = makeProject([makeMessageNode('msg1', 'Фото', {
+    imageUrl: '/uploads/photo.jpg',
+    isLocalImageUrl: true,
+  })]);
+  const code = generatePythonCode(p as any, {
+    botName: 'ThumbTest6',
+    userDatabaseEnabled: false,
+    enableComments: false,
+    thumbnailFileIds: { '/uploads/photo.jpg': 'AgACBQADthumb789' },
+  });
+  ok(!code.includes('thumbnail='), 'thumbnail= НЕ должен быть для фото');
+});
+
+// S07: thumbnailFileIds с несколькими видео
+test('S07', 'несколько видео — thumbnail для каждого', () => {
+  const p = makeProject([
+    makeMessageNode('msg1', 'Видео 1', { videoUrl: '/uploads/v1.mp4', isLocalVideoUrl: true }),
+    makeMessageNode('msg2', 'Видео 2', { videoUrl: '/uploads/v2.mp4', isLocalVideoUrl: true }),
+  ]);
+  const code = generatePythonCode(p as any, {
+    botName: 'ThumbTest7',
+    userDatabaseEnabled: false,
+    enableComments: false,
+    thumbnailFileIds: {
+      '/uploads/v1.mp4': 'AgACBQADthumbA',
+      '/uploads/v2.mp4': 'AgACBQADthumbB',
+    },
+  });
+  ok(code.includes('AgACBQADthumbA'), 'thumbnail для v1 должен быть');
+  ok(code.includes('AgACBQADthumbB'), 'thumbnail для v2 должен быть');
+  syntax(code, 's07');
+});
+
+// S08: thumbnail для URL-видео (не /uploads/)
+test('S08', 'thumbnail для URL-видео (не /uploads/)', () => {
+  const p = makeProject([makeMessageNode('msg1', 'Видео', {
+    videoUrl: 'https://example.com/video.mp4',
+    isLocalVideoUrl: false,
+  })]);
+  const code = generatePythonCode(p as any, {
+    botName: 'ThumbTest8',
+    userDatabaseEnabled: false,
+    enableComments: false,
+    thumbnailFileIds: { 'https://example.com/video.mp4': 'AgACBQADthumbURL' },
+  });
+  ok(code.includes('thumbnail=') || code.includes('AgACBQADthumbURL'), 'thumbnail должен быть для URL-видео');
+  syntax(code, 's08');
+});
+
+const passed = results.filter(r => r.passed).length;const failed = results.filter(r => !r.passed).length;
 const total = results.length;
 
 console.log(`\nИтого: ${passed}/${total} пройдено${failed > 0 ? `, ${failed} провалено` : ' ✅'}`);
