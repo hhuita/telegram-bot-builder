@@ -106,7 +106,7 @@ export function MediaFileCard({
             ) : (
               // Превью видеофайла
               <video
-                src={url}
+                src={`${url}#t=0.1`}
                 className="w-full h-full object-cover"
                 muted
                 preload="metadata"

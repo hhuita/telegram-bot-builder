@@ -50,7 +50,7 @@ export function VideoPreview({ src, className }: VideoPreviewProps) {
     >
       <video
         ref={videoRef}
-        src={src}
+        src={`${src}#t=0.1`}
         className="w-full h-auto max-h-48 object-cover"
         muted
         preload="metadata"
