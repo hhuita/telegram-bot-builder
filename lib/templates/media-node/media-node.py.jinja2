@@ -207,13 +207,14 @@ async def handle_callback_{{ nodeId|safe_name }}(callback_query: types.CallbackQ
     _sent_msg = await callback_query.message.answer_{{ mtype }}("{{ url|e }}")
     _new_file_id = _extract_file_id_from_message(_sent_msg, "{{ mtype }}")
     if _new_file_id:
+        _media_file_id_cache["{{ url }}"] = _new_file_id
         logging.info(f"✅ Узел {{ nodeId }}: получен file_id={_new_file_id[:20]}... для URL {{ url }}")
         if db_pool:
             try:
                 async with db_pool.acquire() as _conn:
                     await _conn.execute(
-                        "UPDATE media_files SET telegram_file_id = $1 WHERE url = $2 AND project_id = $3",
-                        _new_file_id, "{{ url }}", PROJECT_ID
+                        "INSERT INTO media_files (project_id, file_name, file_type, file_path, file_size, mime_type, url, telegram_file_id, is_public, usage_count) VALUES ($1, $2, '{{ mtype }}', $2, 0, 'application/octet-stream', $3, $4, 0, 0) ON CONFLICT (url, project_id) DO UPDATE SET telegram_file_id = EXCLUDED.telegram_file_id",
+                        PROJECT_ID, "{{ url }}", "{{ url }}", _new_file_id
                     )
                     logging.info(f"💾 file_id сохранён в БД для {{ url }}")
             except Exception as _db_err:

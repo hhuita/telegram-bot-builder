@@ -3,7 +3,7 @@
  * @module shared/schema/tables/media-files
  */
 
-import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 import { botProjects } from "./bot-projects";
@@ -42,7 +42,10 @@ export const mediaFiles = pgTable("media_files", {
   createdAt: timestamp("created_at").defaultNow(),
   /** Дата последнего обновления файла */
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  /** Уникальный индекс: один URL на проект (для ON CONFLICT при сохранении file_id) */
+  urlProjectUnique: uniqueIndex("media_files_url_project_id_unique").on(table.url, table.projectId),
+}));
 
 /** Схема для вставки данных медиафайла */
 export const insertMediaFileSchema = z.object({

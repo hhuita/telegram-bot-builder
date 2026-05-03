@@ -312,8 +312,8 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
                     try:
                         async with db_pool.acquire() as _conn:
                             await _conn.execute(
-                                "UPDATE media_files SET telegram_file_id = $1 WHERE url = $2 AND project_id = $3",
-                                _new_fid, "{{ imageUrl }}", PROJECT_ID
+                                "INSERT INTO media_files (project_id, file_name, file_type, file_path, file_size, mime_type, url, telegram_file_id, is_public, usage_count) VALUES ($1, $2, 'photo', $2, 0, 'image/jpeg', $3, $4, 0, 0) ON CONFLICT (url, project_id) DO UPDATE SET telegram_file_id = EXCLUDED.telegram_file_id",
+                                PROJECT_ID, "{{ imageUrl }}", "{{ imageUrl }}", _new_fid
                             )
                             logging.info(f"💾 file_id сохранён в БД для {{ imageUrl }}")
                     except Exception as _db_err:
@@ -368,8 +368,8 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
                     try:
                         async with db_pool.acquire() as _conn:
                             await _conn.execute(
-                                "UPDATE media_files SET telegram_file_id = $1 WHERE url = $2 AND project_id = $3",
-                                _new_fid, "{{ videoUrl }}", PROJECT_ID
+                                "INSERT INTO media_files (project_id, file_name, file_type, file_path, file_size, mime_type, url, telegram_file_id, is_public, usage_count) VALUES ($1, $2, 'video', $2, 0, 'video/mp4', $3, $4, 0, 0) ON CONFLICT (url, project_id) DO UPDATE SET telegram_file_id = EXCLUDED.telegram_file_id",
+                                PROJECT_ID, "{{ videoUrl }}", "{{ videoUrl }}", _new_fid
                             )
                             logging.info(f"💾 file_id сохранён в БД для {{ videoUrl }}")
                     except Exception as _db_err:
@@ -424,8 +424,8 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
                     try:
                         async with db_pool.acquire() as _conn:
                             await _conn.execute(
-                                "UPDATE media_files SET telegram_file_id = $1 WHERE url = $2 AND project_id = $3",
-                                _new_fid, "{{ audioUrl }}", PROJECT_ID
+                                "INSERT INTO media_files (project_id, file_name, file_type, file_path, file_size, mime_type, url, telegram_file_id, is_public, usage_count) VALUES ($1, $2, 'audio', $2, 0, 'audio/mpeg', $3, $4, 0, 0) ON CONFLICT (url, project_id) DO UPDATE SET telegram_file_id = EXCLUDED.telegram_file_id",
+                                PROJECT_ID, "{{ audioUrl }}", "{{ audioUrl }}", _new_fid
                             )
                             logging.info(f"💾 file_id сохранён в БД для {{ audioUrl }}")
                     except Exception as _db_err:
@@ -480,8 +480,8 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
                     try:
                         async with db_pool.acquire() as _conn:
                             await _conn.execute(
-                                "UPDATE media_files SET telegram_file_id = $1 WHERE url = $2 AND project_id = $3",
-                                _new_fid, "{{ documentUrl }}", PROJECT_ID
+                                "INSERT INTO media_files (project_id, file_name, file_type, file_path, file_size, mime_type, url, telegram_file_id, is_public, usage_count) VALUES ($1, $2, 'document', $2, 0, 'application/octet-stream', $3, $4, 0, 0) ON CONFLICT (url, project_id) DO UPDATE SET telegram_file_id = EXCLUDED.telegram_file_id",
+                                PROJECT_ID, "{{ documentUrl }}", "{{ documentUrl }}", _new_fid
                             )
                             logging.info(f"💾 file_id сохранён в БД для {{ documentUrl }}")
                     except Exception as _db_err:
