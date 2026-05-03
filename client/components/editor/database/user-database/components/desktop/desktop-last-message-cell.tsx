@@ -6,6 +6,7 @@
 import { TableCell } from '@/components/ui/table';
 import { UserBotData } from '@shared/schema';
 import { useLastMessage } from '../../hooks/queries/use-last-message';
+import { useLiveLastMessage } from '../../hooks/queries/use-live-last-message';
 import { formatDate } from '../../../dialog/utils/format-date';
 
 /**
@@ -44,7 +45,10 @@ function getMediaIcon(type: string): string {
  * @returns JSX компонент ячейки
  */
 export function DesktopLastMessageCell({ user, projectId }: DesktopLastMessageCellProps): React.JSX.Element {
-  const { data: lastMessage } = useLastMessage(projectId, user.userId ? Number(user.userId) : 0);
+  const numericUserId = user.userId ? Number(user.userId) : 0;
+  const { data: lastMessage } = useLastMessage(projectId, numericUserId);
+  // Подписка на real-time обновления последнего сообщения через WebSocket
+  useLiveLastMessage(projectId, numericUserId || null);
 
   // Получаем текст сообщения, обрабатывая null/undefined
   const rawText = lastMessage?.messageText;
