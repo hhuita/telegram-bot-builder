@@ -263,7 +263,22 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
             if not os.path.exists(image_path):
                 logging.error(f"❌ Медиафайл не найден: {image_path} (узел {{ nodeId }})")
                 return await _b.send_message(_target_chat_id, text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
-            return await _b.send_photo(_target_chat_id, FSInputFile(image_path), caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
+            logging.info(f"📤 Узел {{ nodeId }}: отправка фото через FSInputFile")
+            _sent_photo = await _b.send_photo(_target_chat_id, FSInputFile(image_path), caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
+            if _sent_photo and _sent_photo.photo:
+                _new_fid = _sent_photo.photo[-1].file_id
+                logging.info(f"✅ Узел {{ nodeId }}: получен file_id={_new_fid[:20]}... для фото {{ imageUrl }}")
+                if db_pool:
+                    try:
+                        async with db_pool.acquire() as _conn:
+                            await _conn.execute(
+                                "UPDATE media_files SET telegram_file_id = $1 WHERE url = $2 AND project_id = $3",
+                                _new_fid, "{{ imageUrl }}", PROJECT_ID
+                            )
+                            logging.info(f"💾 file_id сохранён в БД для {{ imageUrl }}")
+                    except Exception as _db_err:
+                        logging.warning(f"⚠️ Не удалось сохранить file_id в БД: {_db_err}")
+            return _sent_photo
 {%- elif '{' in imageUrl and '}' in imageUrl %}
             {# imageUrl содержит переменную вида {var.path} — подставляем через replace_variables_in_text #}
             _image_url_resolved = replace_variables_in_text("{{ imageUrl }}", all_user_vars, {})
@@ -302,7 +317,22 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
             if not os.path.exists(video_path):
                 logging.error(f"❌ Медиафайл не найден: {video_path} (узел {{ nodeId }})")
                 return await _b.send_message(_target_chat_id, text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
-            return await _b.send_video(_target_chat_id, FSInputFile(video_path), caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
+            logging.info(f"📤 Узел {{ nodeId }}: отправка видео через FSInputFile")
+            _sent_video = await _b.send_video(_target_chat_id, FSInputFile(video_path), caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
+            if _sent_video and _sent_video.video:
+                _new_fid = _sent_video.video.file_id
+                logging.info(f"✅ Узел {{ nodeId }}: получен file_id={_new_fid[:20]}... для видео {{ videoUrl }}")
+                if db_pool:
+                    try:
+                        async with db_pool.acquire() as _conn:
+                            await _conn.execute(
+                                "UPDATE media_files SET telegram_file_id = $1 WHERE url = $2 AND project_id = $3",
+                                _new_fid, "{{ videoUrl }}", PROJECT_ID
+                            )
+                            logging.info(f"💾 file_id сохранён в БД для {{ videoUrl }}")
+                    except Exception as _db_err:
+                        logging.warning(f"⚠️ Не удалось сохранить file_id в БД: {_db_err}")
+            return _sent_video
 {%- else %}
 {%- set _cached_vid_fid = (telegramFileIds or {})[videoUrl] if telegramFileIds and videoUrl in telegramFileIds else '' %}
 {%- if _cached_vid_fid %}
@@ -333,7 +363,22 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
             if not os.path.exists(audio_path):
                 logging.error(f"❌ Медиафайл не найден: {audio_path} (узел {{ nodeId }})")
                 return await _b.send_message(_target_chat_id, text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
-            return await _b.send_audio(_target_chat_id, FSInputFile(audio_path), caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
+            logging.info(f"📤 Узел {{ nodeId }}: отправка аудио через FSInputFile")
+            _sent_audio = await _b.send_audio(_target_chat_id, FSInputFile(audio_path), caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
+            if _sent_audio and _sent_audio.audio:
+                _new_fid = _sent_audio.audio.file_id
+                logging.info(f"✅ Узел {{ nodeId }}: получен file_id={_new_fid[:20]}... для аудио {{ audioUrl }}")
+                if db_pool:
+                    try:
+                        async with db_pool.acquire() as _conn:
+                            await _conn.execute(
+                                "UPDATE media_files SET telegram_file_id = $1 WHERE url = $2 AND project_id = $3",
+                                _new_fid, "{{ audioUrl }}", PROJECT_ID
+                            )
+                            logging.info(f"💾 file_id сохранён в БД для {{ audioUrl }}")
+                    except Exception as _db_err:
+                        logging.warning(f"⚠️ Не удалось сохранить file_id в БД: {_db_err}")
+            return _sent_audio
 {%- else %}
 {%- set _cached_aud_fid = (telegramFileIds or {})[audioUrl] if telegramFileIds and audioUrl in telegramFileIds else '' %}
 {%- if _cached_aud_fid %}
@@ -364,7 +409,22 @@ async def handle_callback_{{ nodeId|replace('-', '_') }}(callback_query: types.C
             if not os.path.exists(doc_path):
                 logging.error(f"❌ Медиафайл не найден: {doc_path} (узел {{ nodeId }})")
                 return await _b.send_message(_target_chat_id, text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
-            return await _b.send_document(_target_chat_id, FSInputFile(doc_path), caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
+            logging.info(f"📤 Узел {{ nodeId }}: отправка документа через FSInputFile")
+            _sent_doc = await _b.send_document(_target_chat_id, FSInputFile(doc_path), caption=text{{ parse_mode_arg }}, reply_markup={{ effectiveKeyboard }}, message_thread_id=_thread_id)
+            if _sent_doc and _sent_doc.document:
+                _new_fid = _sent_doc.document.file_id
+                logging.info(f"✅ Узел {{ nodeId }}: получен file_id={_new_fid[:20]}... для документа {{ documentUrl }}")
+                if db_pool:
+                    try:
+                        async with db_pool.acquire() as _conn:
+                            await _conn.execute(
+                                "UPDATE media_files SET telegram_file_id = $1 WHERE url = $2 AND project_id = $3",
+                                _new_fid, "{{ documentUrl }}", PROJECT_ID
+                            )
+                            logging.info(f"💾 file_id сохранён в БД для {{ documentUrl }}")
+                    except Exception as _db_err:
+                        logging.warning(f"⚠️ Не удалось сохранить file_id в БД: {_db_err}")
+            return _sent_doc
 {%- else %}
 {%- set _cached_doc_fid = (telegramFileIds or {})[documentUrl] if telegramFileIds and documentUrl in telegramFileIds else '' %}
 {%- if _cached_doc_fid %}
