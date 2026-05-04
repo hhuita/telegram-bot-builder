@@ -86,20 +86,8 @@ export async function getBotDataHandler(req: Request, res: Response): Promise<vo
                         const photoResult = await photoResponse.json();
 
                         if (photoResponse.ok && photoResult.result?.total_count > 0 && photoResult.result.photos?.[0]?.length > 0) {
-                            const fileId = photoResult.result.photos[0][photoResult.result.photos[0].length - 1].file_id;
-
-                            const fileResponse = await fetchWithProxy(
-                                `https://api.telegram.org/bot${defaultToken.token}/getFile`,
-                                {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ file_id: fileId })
-                                }
-                            );
-                            const fileResult = await fileResponse.json();
-                            if (fileResponse.ok && fileResult.result?.file_path) {
-                                photoUrl = `https://api.telegram.org/file/bot${defaultToken.token}/${fileResult.result.file_path}`;
-                            }
+                            // Сохраняем file_id напрямую — он не протухает в отличие от прямого URL
+                            photoUrl = photoResult.result.photos[0][photoResult.result.photos[0].length - 1].file_id;
                         }
                     } catch (photoError) {
                         console.warn("Не удалось получить фото бота:", photoError);

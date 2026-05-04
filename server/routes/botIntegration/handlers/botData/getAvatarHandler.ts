@@ -60,6 +60,9 @@ export async function getAvatarHandler(req: Request, res: Response): Promise<voi
                         const photoData = await photoResp.json();
                         if (photoResp.ok && photoData.result?.total_count > 0) {
                             const fileId = photoData.result.photos[0].at(-1).file_id;
+                            // Сохраняем file_id в БД — он не протухает, свежий URL строится при каждой отдаче
+                            await pool.query('UPDATE bot_tokens SET bot_photo_url = $1 WHERE id = $2', [fileId, tokenToUse.id]);
+                            // Для текущего запроса резолвим полный URL через getFile
                             const fileResp = await fetchWithProxy(
                                 `https://api.telegram.org/bot${tokenToUse.token}/getFile`,
                                 { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file_id: fileId }) }
@@ -67,8 +70,6 @@ export async function getAvatarHandler(req: Request, res: Response): Promise<voi
                             const fileData = await fileResp.json();
                             if (fileResp.ok && fileData.result?.file_path) {
                                 avatarUrl = `https://api.telegram.org/file/bot${tokenToUse.token}/${fileData.result.file_path}`;
-                                // Сохраняем в базу чтобы не запрашивать каждый раз
-                                await pool.query('UPDATE bot_tokens SET bot_photo_url = $1 WHERE id = $2', [avatarUrl, tokenToUse.id]);
                             }
                         }
                     } catch (e) {
