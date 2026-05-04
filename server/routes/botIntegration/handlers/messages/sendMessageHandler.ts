@@ -15,6 +15,7 @@ import {
   resolveEffectiveProjectToken,
 } from "../../../utils/resolve-request-token";
 import { replaceVariablesInText } from "./replace-variables";
+import { broadcastProjectEvent } from "../../../../terminal/broadcastProjectEvent";
 
 /**
  * Обрабатывает запрос на отправку сообщения пользователю
@@ -89,13 +90,30 @@ export async function sendMessageHandler(req: Request, res: Response): Promise<v
       return;
     }
 
-    await storage.createBotMessage({
+    const savedMessage = await storage.createBotMessage({
       projectId,
       tokenId: effectiveTokenId,
       userId,
       messageType: "bot",
       messageText: textWithVariables.trim(),
       messageData: { sentFromAdmin: true },
+    });
+
+    // Публикуем WS-событие чтобы таблица и диалог обновились в реальном времени
+    await broadcastProjectEvent(projectId, {
+      type: 'new-message',
+      projectId,
+      tokenId: effectiveTokenId,
+      data: {
+        id: savedMessage?.id ?? 0,
+        userId,
+        messageType: 'bot',
+        messageText: textWithVariables.trim(),
+        messageData: { sentFromAdmin: true },
+        nodeId: null,
+        createdAt: new Date().toISOString(),
+      },
+      timestamp: new Date().toISOString(),
     });
 
     res.json({ message: "Сообщение успешно отправлено", result });

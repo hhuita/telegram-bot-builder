@@ -1556,6 +1556,7 @@ export default function Editor() {
 
     if (useFlexibleLayout) {
       return (
+        <UserMessagesLiveProvider projectId={activeProject.id}>
         <div className="flex h-screen w-full overflow-hidden">
           {/** Левый сайдбар навигации — временно скрыт */}
           {/* <AppSidebar
@@ -1603,16 +1604,14 @@ export default function Editor() {
             }
             dialogContent={
               selectedDialogUser && activeProject && (
-                <UserMessagesLiveProvider projectId={activeProject.id}>
-                  <DialogPanel
-                    key={`dialog-${selectedDialogUser?.userId || 'none'}`}
-                    projectId={activeProject.id}
-                    selectedTokenId={selectedDatabaseTokenId}
-                    user={selectedDialogUser}
-                    onClose={handleCloseDialogPanel}
-                    onSelectUser={handleSelectDialogUser}
-                  />
-                </UserMessagesLiveProvider>
+                <DialogPanel
+                  key={`dialog-${selectedDialogUser?.userId || 'none'}`}
+                  projectId={activeProject.id}
+                  selectedTokenId={selectedDatabaseTokenId}
+                  user={selectedDialogUser}
+                  onClose={handleCloseDialogPanel}
+                  onSelectUser={handleSelectDialogUser}
+                />
               )
             }
             userDetailsContent={
@@ -1635,6 +1634,7 @@ export default function Editor() {
         </SimpleLayoutCustomizer>
           </div>
         </div>
+        </UserMessagesLiveProvider>
       );
     }
 

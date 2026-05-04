@@ -16,7 +16,6 @@ import { useVariableToQuestionMap, useFilteredAndSortedUsers } from './panel/pan
 import { useUserDatabasePanelState } from './panel/panel-state';
 import { UserDatabasePanelProps } from './types';
 import { formatUserName } from './utils';
-import { UserMessagesLiveProvider } from './contexts/user-messages-live-context';
 import { useLiveInvalidate } from './hooks/use-live-invalidate';
 
 /**
@@ -160,7 +159,7 @@ export function UserDatabasePanel(props: UserDatabasePanelProps): React.JSX.Elem
   }
 
   return (
-    <UserMessagesLiveProvider projectId={projectId}>
+    <>
       <LiveInvalidator projectId={projectId} selectedTokenId={resolvedSelectedTokenId} />
       <div ref={containerRef} className="flex h-full w-full flex-col">
         <DatabaseContent
@@ -205,7 +204,7 @@ export function UserDatabasePanel(props: UserDatabasePanelProps): React.JSX.Elem
         isFetchingNextPage={isFetchingNextPage}
         />
       </div>
-    </UserMessagesLiveProvider>
+    </>
   );
 }
 

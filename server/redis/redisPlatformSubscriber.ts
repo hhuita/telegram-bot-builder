@@ -2,12 +2,14 @@
  * @fileoverview Подписчик Redis Pub/Sub для событий платформы.
  * Слушает каналы bot:started, bot:stopped, bot:error, bot:message и пробрасывает
  * события в broadcastProjectEvent для рассылки WebSocket-клиентам.
+ * При получении bot:message от нового пользователя — дополнительно рассылает new-user.
  * @module server/redis/redisPlatformSubscriber
  */
 
 import { getRedisSubscriber } from './redisClient';
 import { broadcastProjectEvent } from '../terminal/broadcastProjectEvent';
 import { waitForRedis } from './waitForRedis';
+import { storage } from '../storages/storage';
 import type { ProjectEvent } from '../terminal/ProjectEvent';
 
 /**
@@ -71,6 +73,48 @@ function parseChannel(channel: string): {
 }
 
 /**
+ * Проверяет новый ли пользователь и если да — рассылает new-user событие.
+ * Вызывается при получении bot:message когда bot:user не был опубликован (Redis недоступен в боте).
+ * @param projectId - Идентификатор проекта
+ * @param tokenId - Идентификатор токена
+ * @param data - Данные сообщения из Redis
+ */
+async function maybeEmitNewUser(projectId: number, tokenId: number, data: unknown): Promise<void> {
+  try {
+    const msgData = data as Record<string, unknown>;
+    const userId = msgData?.userId as string | undefined;
+    if (!userId || msgData?.messageType !== 'user') return;
+
+    const user = await storage.getUserBotDataByProjectAndUser(projectId, userId, tokenId);
+    if (!user) return;
+
+    // Считаем пользователя новым если interactionCount === 1 (только что создан)
+    if ((user.interactionCount ?? 0) > 1) return;
+
+    const newUserEvent: ProjectEvent = {
+      type: 'new-user',
+      projectId,
+      tokenId,
+      data: {
+        userId: String(user.userId),
+        username: user.userName ?? null,
+        firstName: user.firstName ?? null,
+        lastName: user.lastName ?? null,
+        avatarUrl: user.avatarUrl ?? null,
+        isBot: user.isBot ?? 0,
+        isPremium: user.isPremium ?? 0,
+        registeredAt: user.createdAt?.toISOString() ?? new Date().toISOString(),
+      },
+      timestamp: new Date().toISOString(),
+    };
+
+    await broadcastProjectEvent(projectId, newUserEvent);
+  } catch {
+    // Не критично — просто не рассылаем new-user
+  }
+}
+
+/**
  * Обрабатывает входящее сообщение из Redis-канала.
  * Парсит канал, формирует ProjectEvent и вызывает broadcastProjectEvent.
  * @param pattern - Паттерн подписки (не используется)
@@ -105,6 +149,12 @@ function handleMessage(_pattern: string, channel: string, message: string): void
   broadcastProjectEvent(parsed.projectId, event).catch((err) =>
     console.error(`[RedisSub] Ошибка broadcastProjectEvent:`, err)
   );
+
+  // Если это сообщение от пользователя — проверяем новый ли он и рассылаем new-user
+  // (fallback на случай если Redis в боте недоступен и bot:user не был опубликован)
+  if (parsed.type === 'new-message') {
+    maybeEmitNewUser(parsed.projectId, parsed.tokenId, data).catch(() => {});
+  }
 }
 
 /**
