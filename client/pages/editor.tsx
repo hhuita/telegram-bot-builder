@@ -46,6 +46,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useLocation } from 'wouter';
 
 import { DialogPanel } from '@/components/editor/database/dialog/dialog-panel';
+import { UserMessagesLiveProvider } from '@/components/editor/database/user-database/contexts/user-messages-live-context';
 import { GroupsPanel } from '@/components/editor/groups/groups-panel';
 import { UserDatabasePanel } from '@/components/editor/database/user-database/user-database-panel';
 import { UserDetailsPanel } from '@/components/editor/database/user-details/user-details-panel';
@@ -1555,6 +1556,7 @@ export default function Editor() {
 
     if (useFlexibleLayout) {
       return (
+        <UserMessagesLiveProvider projectId={activeProject.id}>
         <div className="flex h-screen w-full overflow-hidden">
           {/** Левый сайдбар навигации — временно скрыт */}
           {/* <AppSidebar
@@ -1632,6 +1634,7 @@ export default function Editor() {
         </SimpleLayoutCustomizer>
           </div>
         </div>
+        </UserMessagesLiveProvider>
       );
     }
 
