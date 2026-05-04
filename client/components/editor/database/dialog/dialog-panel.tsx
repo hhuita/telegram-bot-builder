@@ -188,6 +188,7 @@ export function DialogPanel({
                 user={message.messageType === 'user' ? user : null}
                 bot={message.messageType === 'bot' ? bot : null}
                 projectId={projectId}
+                tokenId={selectedTokenId}
               />
             ))}
           </div>

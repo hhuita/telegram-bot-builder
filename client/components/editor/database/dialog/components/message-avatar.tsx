@@ -18,13 +18,14 @@ interface MessageAvatarProps {
   bot?: UserBotData | null;
   /** Идентификатор проекта для прокси аватара */
   projectId?: number;
+  /** Идентификатор токена для резолва аватара */
+  tokenId?: number | null;
 }
 
 /**
  * Компонент аватара для сообщения
  */
-export function MessageAvatar({ messageType, user, bot, projectId }: MessageAvatarProps) {
-  // Для бота используем данные бота, для пользователя - данные пользователя
+export function MessageAvatar({ messageType, user, bot, projectId, tokenId }: MessageAvatarProps) {
   const avatarData = messageType === 'bot' ? bot : user;
-  return <UserAvatar messageType={messageType} user={avatarData} projectId={projectId} />;
+  return <UserAvatar messageType={messageType} user={avatarData} projectId={projectId} tokenId={tokenId} />;
 }
