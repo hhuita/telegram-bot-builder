@@ -47,9 +47,11 @@ async def save_message_to_api(user_id: str, message_type: str, message_text: str
                         f"bot:message:{PROJECT_ID}:{TOKEN_ID}",
                         _redis_payload
                     )
-                    logging.debug(f"📡 Redis publish: bot:message:{PROJECT_ID}:{TOKEN_ID}")
+                    logging.info(f"📡 Redis publish: bot:message:{PROJECT_ID}:{TOKEN_ID} | type={message_type} user={user_id} msg_id={result['id']}")
                 except Exception as _re:
-                    logging.debug(f"⚠️ Redis publish не удался (не критично): {_re}")
+                    logging.warning(f"⚠️ Redis publish bot:message не удался: {_re}")
+            else:
+                logging.warning(f"⚠️ Redis недоступен — событие bot:message не опубликовано (msg_id={result['id']}, user={user_id})")
 
             return {"id": result['id'], "user_id": result['user_id'], "message_type": result['message_type'], "created_at": result['created_at']}
     except Exception as e:

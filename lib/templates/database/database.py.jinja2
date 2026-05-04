@@ -223,6 +223,11 @@ async def save_user_to_db(user_id: int, username: str = None, first_name: str = 
         # xmax = 0 означает INSERT (новый пользователь), >0 — UPDATE (существующий)
         is_new_user = result is not None and result['xmax'] == 0
 
+        if is_new_user:
+            logging.info(f"🆕 Новый пользователь: {user_id} (@{username})")
+        else:
+            logging.debug(f"👤 Существующий пользователь: {user_id} (interaction_count обновлён)")
+
         if is_new_user and _redis_client:
             try:
                 _new_user_payload = json.dumps({
@@ -239,9 +244,11 @@ async def save_user_to_db(user_id: int, username: str = None, first_name: str = 
                     f"bot:user:{PROJECT_ID}:{TOKEN_ID}",
                     _new_user_payload
                 )
-                logging.debug(f"📡 Redis publish: bot:user:{PROJECT_ID}:{TOKEN_ID} (новый пользователь {user_id})")
+                logging.info(f"📡 Redis publish: bot:user:{PROJECT_ID}:{TOKEN_ID} | user={user_id} @{username}")
             except Exception as _re:
-                logging.debug(f"⚠️ Redis publish new-user не удался: {_re}")
+                logging.warning(f"⚠️ Redis publish bot:user не удался: {_re}")
+        elif is_new_user and not _redis_client:
+            logging.warning(f"⚠️ Redis недоступен — событие bot:user не опубликовано (user={user_id})")
 
         return True
     except Exception as e:
