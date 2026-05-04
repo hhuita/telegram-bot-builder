@@ -142,7 +142,7 @@ export function MessageMedia({ media, messageData, projectId, tokenId }: Message
           />
           <CopyFileIdButton
             fileId={photo.file_id}
-            className="absolute bottom-1 right-1"
+            className="absolute top-1 right-1"
           />
         </div>
         {lightboxSrc && (
@@ -164,7 +164,7 @@ export function MessageMedia({ media, messageData, projectId, tokenId }: Message
         />
         <CopyFileIdButton
           fileId={video.file_id}
-          className="absolute bottom-1 right-1"
+          className="absolute top-1 right-1"
         />
       </div>
     );
@@ -241,7 +241,7 @@ export function MessageMedia({ media, messageData, projectId, tokenId }: Message
             />
             <CopyFileIdButton
               fileId={sticker.file_id}
-              className="absolute bottom-1 right-1"
+              className="absolute top-1 right-1"
             />
           </div>
           {lightboxSrc && (
@@ -262,7 +262,7 @@ export function MessageMedia({ media, messageData, projectId, tokenId }: Message
           />
           <CopyFileIdButton
             fileId={sticker.file_id}
-            className="absolute bottom-1 right-1"
+            className="absolute top-1 right-1"
           />
         </div>
         {lightboxSrc && (
