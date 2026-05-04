@@ -11,9 +11,6 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/queryClient';
 import { BotMessageWithMedia } from '../types';
 
-/** Задержка перед refetch после успешной отправки (мс) */
-const REFETCH_DELAY_MS = 300;
-
 /**
  * Параметры хука useSendMessage
  */
@@ -96,10 +93,7 @@ export function useSendMessage({
         title: 'Сообщение отправлено',
         description: 'Сообщение успешно отправлено пользователю',
       });
-      // Задержка перед refetch — даём WS время доставить реальное сообщение
-      setTimeout(() => {
-        onSent?.();
-      }, REFETCH_DELAY_MS);
+      onSent?.();
     },
 
     onError: () => {
