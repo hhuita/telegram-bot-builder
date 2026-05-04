@@ -239,10 +239,6 @@ export function MessageMedia({ media, messageData, projectId, tokenId }: Message
               playsInline
               className="w-full h-auto pointer-events-none"
             />
-            <CopyFileIdButton
-              fileId={sticker.file_id}
-              className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
-            />
           </div>
           {lightboxSrc && (
             <ImageLightbox src={lightboxSrc} mediaType="video" onClose={() => setLightboxSrc(null)} />
@@ -250,18 +246,6 @@ export function MessageMedia({ media, messageData, projectId, tokenId }: Message
         </>
       );
     }
-    // Анимированные стикеры (.tgs / Lottie) браузер не умеет рендерить —
-    // показываем плейсхолдер с эмодзи и кнопкой копирования file_id
-    if (sticker.is_animated) {
-      return (
-        <div className="flex items-center gap-2 rounded-lg bg-muted/40 px-3 py-2 max-w-[200px]">
-          <span className="text-2xl">{sticker.emoji || '🎭'}</span>
-          <span className="text-xs text-muted-foreground flex-1">Анимированный стикер</span>
-          <CopyFileIdButton fileId={sticker.file_id} />
-        </div>
-      );
-    }
-    // Статичный стикер (.webp)
     return (
       <>
         <div className="group relative max-w-[120px]">
@@ -271,10 +255,6 @@ export function MessageMedia({ media, messageData, projectId, tokenId }: Message
             className="w-full h-auto cursor-zoom-in"
             onClick={() => setLightboxSrc(stickerUrl)}
             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-          />
-          <CopyFileIdButton
-            fileId={sticker.file_id}
-            className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
           />
         </div>
         {lightboxSrc && (
