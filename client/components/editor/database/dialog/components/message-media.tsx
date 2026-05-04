@@ -239,6 +239,10 @@ export function MessageMedia({ media, messageData, projectId, tokenId }: Message
               playsInline
               className="w-full h-auto pointer-events-none"
             />
+            <CopyFileIdButton
+              fileId={sticker.file_id}
+              className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            />
           </div>
           {lightboxSrc && (
             <ImageLightbox src={lightboxSrc} mediaType="video" onClose={() => setLightboxSrc(null)} />
@@ -255,6 +259,10 @@ export function MessageMedia({ media, messageData, projectId, tokenId }: Message
             className="w-full h-auto cursor-zoom-in"
             onClick={() => setLightboxSrc(stickerUrl)}
             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+          <CopyFileIdButton
+            fileId={sticker.file_id}
+            className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
           />
         </div>
         {lightboxSrc && (
