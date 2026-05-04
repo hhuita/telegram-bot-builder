@@ -129,7 +129,6 @@ export function UserMessagesLiveProvider({ projectId, children }: UserMessagesLi
           // Пропускаем только поддерживаемые типы событий
           if (msg.type !== 'new-message' && msg.type !== 'new-user') return;
           if (msg.projectId !== projectId) return;
-          console.log('[LiveProvider] → рассылаем', listenersRef.current.size, 'подписчикам');
           listenersRef.current.forEach((fn) => fn(msg));
         } catch {
           // Игнорируем некорректные сообщения

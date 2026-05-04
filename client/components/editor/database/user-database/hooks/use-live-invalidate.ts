@@ -54,7 +54,7 @@ function updateUserInCache(
 ): void {
   const now = new Date();
   queryClient.setQueriesData<InfiniteData<UsersPageResponse>>(
-    { queryKey: ['infinite-users', projectId, normalizedTokenId] },
+    { queryKey: ['infinite-users', projectId] },
     (old) => {
       if (!old) return old;
       return {
@@ -131,7 +131,7 @@ function addNewUserToCache(
   };
 
   queryClient.setQueriesData<InfiniteData<UsersPageResponse>>(
-    { queryKey: ['infinite-users', projectId, normalizedTokenId] },
+    { queryKey: ['infinite-users', projectId] },
     (old) => {
       // Если кэш пустой (0 пользователей) — создаём начальную структуру
       const base: InfiniteData<UsersPageResponse> = old ?? {
@@ -206,7 +206,7 @@ export function useLiveInvalidate({ projectId, selectedTokenId }: UseLiveInvalid
         // поэтому данные уже в БД к моменту получения WS-события — задержка не нужна
         queryClient.invalidateQueries({ queryKey: statsKey });
         queryClient.invalidateQueries({
-          queryKey: ['infinite-users', projectId, normalizedTokenId],
+          queryKey: ['infinite-users', projectId],
           refetchType: 'all',
         });
       }
@@ -232,7 +232,7 @@ export function useLiveInvalidate({ projectId, selectedTokenId }: UseLiveInvalid
 
         queryClient.invalidateQueries({ queryKey: statsKey });
         queryClient.invalidateQueries({
-          queryKey: ['infinite-users', projectId, normalizedTokenId],
+          queryKey: ['infinite-users', projectId],
           refetchType: 'all',
         });
       }
