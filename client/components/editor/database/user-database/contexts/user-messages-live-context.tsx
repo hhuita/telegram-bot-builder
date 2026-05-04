@@ -128,14 +128,21 @@ export function UserMessagesLiveProvider({ projectId, children }: UserMessagesLi
           const msg = JSON.parse(event.data as string) as LiveEvent;
           // Пропускаем только поддерживаемые типы событий
           if (msg.type !== 'new-message' && msg.type !== 'new-user') return;
+          console.log(`[LiveProvider] событие ${msg.type} projectId=${msg.projectId} (ожидаем ${projectId}), подписчиков: ${listenersRef.current.size}`);
           if (msg.projectId !== projectId) return;
+          console.log(`[LiveProvider] → рассылаем ${listenersRef.current.size} подписчикам`);
           listenersRef.current.forEach((fn) => fn(msg));
         } catch {
           // Игнорируем некорректные сообщения
         }
       };
 
+      ws.onopen = () => {
+        console.log(`[LiveProvider] WS подключён, projectId=${projectId}`);
+      };
+
       ws.onclose = () => {
+        console.log(`[LiveProvider] WS отключён, projectId=${projectId}, реконнект через 3с`);
         wsRef.current = null;
         if (!destroyedRef.current) {
           reconnectTimerRef.current = setTimeout(connect, 3000);
