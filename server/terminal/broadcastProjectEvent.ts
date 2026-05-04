@@ -35,9 +35,11 @@ export async function broadcastProjectEvent(projectId: number, event: ProjectEve
   const payload = JSON.stringify(event);
 
   // Рассылаем клиентам конкретного проекта
+  let sentToProject = 0;
   for (const [key, connections] of activeConnections.entries()) {
     if (key.startsWith(prefix)) {
       sendToConnections(connections, payload);
+      sentToProject += connections.size;
     }
   }
 
@@ -46,6 +48,8 @@ export async function broadcastProjectEvent(projectId: number, event: ProjectEve
     const project = await storage.getBotProject(projectId);
     const userKey = project?.ownerId ? `user_${project.ownerId}` : `user_global`;
     const userConns = activeConnections.get(userKey);
+    const allKeys = [...activeConnections.keys()];
+    console.log(`[broadcast] event=${event.type} projectId=${projectId} userKey=${userKey} userConns=${userConns?.size ?? 0} allKeys=[${allKeys.join(',')}]`);
     if (userConns) {
       sendToConnections(userConns, payload);
     }
