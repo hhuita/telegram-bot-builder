@@ -165,6 +165,16 @@ async def message_logging_middleware(handler, event: types.Message, data: dict):
             message_text=message_text,
             message_data=message_data,
         )
+
+        # Обновляем last_interaction в bot_users при каждом входящем сообщении
+        # (fire-and-forget — не блокирует обработку)
+        if event.from_user:
+            asyncio.create_task(save_user_to_db(
+                int(user_id),
+                event.from_user.username,
+                event.from_user.first_name,
+                event.from_user.last_name,
+            ))
 {% if saveIncomingMedia %}
         # Если включено сохранение фото — скачиваем и сохраняем в фоне (fire-and-forget)
         if photo_file_id:
