@@ -3,7 +3,7 @@
  * @description Отображает заголовок с именем и кнопкой закрытия
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User, X } from 'lucide-react';
@@ -26,28 +26,32 @@ interface PanelHeaderProps {
   onSelectUser?: (user: UserBotData) => void;
   /** Идентификатор проекта для прокси аватара */
   projectId?: number;
+  /** Идентификатор токена для резолва аватара */
+  tokenId?: number | null;
 }
 
 /**
- * Компонент аватара пользователя
+ * Компонент аватара пользователя в заголовке панели
  */
-function UserAvatar({ user, projectId, formatUserName }: { user: UserBotData; projectId?: number; formatUserName: (user: UserBotData | null) => string }) {
-  const hasPhoto = user?.avatarUrl && projectId && user?.userId;
+function UserAvatarInline({ user, projectId, tokenId, formatUserName }: {
+  user: UserBotData;
+  projectId?: number;
+  tokenId?: number | null;
+  formatUserName: (user: UserBotData | null) => string;
+}) {
+  const [imageError, setImageError] = useState(false);
+  const hasPhoto = user?.avatarUrl && projectId && user?.userId && !imageError;
 
   if (hasPhoto) {
-    const avatarUrl = `/api/projects/${projectId}/users/${user.userId}/avatar`;
+    const tokenParam = tokenId ? `?tokenId=${tokenId}` : '';
+    const avatarUrl = `/api/projects/${projectId}/users/${user.userId}/avatar${tokenParam}`;
 
     return (
       <img
         src={avatarUrl}
         alt={formatUserName(user)}
         className="w-7 xs:w-7 sm:w-8 h-7 xs:h-7 sm:h-8 rounded-full object-cover flex-shrink-0"
-        onError={(e) => {
-          (e.target as HTMLImageElement).style.display = 'none';
-          const imgElement = e.target as HTMLImageElement;
-          const fallback = imgElement.parentElement?.querySelector('.fallback-avatar') as HTMLElement | null;
-          if (fallback) fallback.style.display = 'flex';
-        }}
+        onError={() => setImageError(true)}
       />
     );
   }
@@ -64,23 +68,18 @@ function UserAvatar({ user, projectId, formatUserName }: { user: UserBotData; pr
  * @param {PanelHeaderProps} props - Свойства компонента
  * @returns {JSX.Element} Элемент заголовка
  */
-export function PanelHeader({ user, users, onClose, formatUserName, onSelectUser, projectId }: PanelHeaderProps): React.JSX.Element {
-  console.log('[PanelHeader] Current user:', user, 'onSelectUser:', !!onSelectUser);
-  
+export function PanelHeader({ user, users, onClose, formatUserName, onSelectUser, projectId, tokenId }: PanelHeaderProps): React.JSX.Element {
   return (
     <div className="flex items-center justify-between gap-2 p-2 xs:p-2.5 sm:p-3 border-b">
       <div className="flex items-center gap-2 min-w-0">
-        <UserAvatar user={user} projectId={projectId} formatUserName={formatUserName} />
+        <UserAvatarInline user={user} projectId={projectId} tokenId={tokenId} formatUserName={formatUserName} />
         <div className="min-w-0">
           <h3 className="font-medium text-xs xs:text-xs sm:text-sm truncate">Детали пользователя</h3>
           <Select
             value={user.userId.toString()}
             onValueChange={(value) => {
-              console.log('[PanelHeader] Select value changed to:', value);
               const selectedUser = users.find((u) => u.userId.toString() === value);
-              console.log('[PanelHeader] Found selectedUser:', selectedUser);
               if (selectedUser && onSelectUser) {
-                console.log('[PanelHeader] Calling onSelectUser with:', selectedUser);
                 onSelectUser(selectedUser);
               }
             }}

@@ -64,6 +64,7 @@ export function UserDetailsPanel({
           formatUserName={formatUserName}
           onSelectUser={handleSelectUser}
           projectId={projectId}
+          tokenId={selectedTokenId}
         />
         <BasicInfo user={user} />
         <Statistics user={user} total={total} userSent={userSent} botSent={botSent} onOpenDialog={onOpenDialog} />
