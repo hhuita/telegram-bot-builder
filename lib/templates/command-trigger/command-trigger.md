@@ -20,6 +20,16 @@
 | targetNodeId | string | ID целевого узла | ✅ |
 | targetNodeType | string | Тип целевого узла | ✅ |
 
+## Трекинг deep_link_param и referrer_id
+
+При переходе по deep link (`/start <args>`) в `deep_link_router`:
+
+1. `deep_link_param = args` сохраняется в `user_data` через `set_user_var` (только при первом визите)
+2. Если `args.startswith("ref_")` — парсится `referrer_id = args[4:]` и тоже сохраняется
+3. При прямом `/start` (без параметра) — `deep_link_param = "direct"` сохраняется в `start_command_handler`
+
+Оба поля передаются в `save_user_to_db` через middleware и не перезаписываются при повторных визитах.
+
 ## Пример входных данных (Node[])
 
 ```typescript

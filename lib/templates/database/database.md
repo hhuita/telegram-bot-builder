@@ -41,7 +41,38 @@ try {
 
 ## Примеры вывода
 
-### База данных включена
+### save_user_to_db — новые параметры трекинга
+
+| Параметр | Тип | По умолчанию | Описание |
+|----------|-----|--------------|----------|
+| `is_premium` | `bool` | `False` | Пользователь Telegram Premium |
+| `is_bot` | `bool` | `False` | Является ли пользователь ботом |
+| `language_code` | `str` | `None` | Код языка интерфейса пользователя |
+| `deep_link_param` | `str` | `None` | Параметр deep link из `/start` (первое касание) |
+| `referrer_id` | `str` | `None` | ID реферера (из `ref_<id>` в deep link) |
+
+> `deep_link_param` и `referrer_id` не перезаписываются при повторных визитах —
+> используется `COALESCE(bot_users.field, EXCLUDED.field)` для сохранения первого значения.
+
+### Redis событие new-user
+
+При первом визите публикуется в канал `bot:user:{PROJECT_ID}:{TOKEN_ID}`:
+
+```json
+{
+  "userId": "123456789",
+  "username": "ivan",
+  "firstName": "Иван",
+  "lastName": "Петров",
+  "avatarUrl": "file_id_...",
+  "isBot": 0,
+  "isPremium": 1,
+  "languageCode": "ru",
+  "deepLinkParam": "ref_987654321",
+  "referrerId": "987654321",
+  "registeredAt": "2026-02-22T12:00:00"
+}
+```
 
 **Вход:**
 ```typescript

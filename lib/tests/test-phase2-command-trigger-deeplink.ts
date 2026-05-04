@@ -248,8 +248,15 @@ test('P05', 'deepLinkSaveToVar=false → кастомная переменная
   const code = gen(p, 'p05');
   // utm_source всегда сохраняется — это ожидаемое поведение
   ok(code.includes('"utm_source"'), 'utm_source должен сохраняться в роутере');
-  // Кастомная переменная referrer_id НЕ должна сохраняться при deepLinkSaveToVar=false
-  ok(!code.includes('set_user_var(user_id, "referrer_id"'), 'кастомная переменная referrer_id НЕ должна вызываться');
+  // При deepLinkSaveToVar=false кастомная переменная НЕ должна сохраняться через deepLinkVarName-механизм.
+  // Проверяем что нет блока set_user_var внутри ветки if args == "ref":
+  // (автосохранение referrer_id через ref_-префикс — отдельная фича, не связанная с deepLinkSaveToVar)
+  const refBranchIdx = code.indexOf('if args == "ref"');
+  const nextBranchIdx = code.indexOf('\n    if ', refBranchIdx + 1);
+  const refBranchCode = nextBranchIdx > 0
+    ? code.slice(refBranchIdx, nextBranchIdx)
+    : code.slice(refBranchIdx);
+  ok(!refBranchCode.includes('set_user_var(user_id, "referrer_id"'), 'кастомная переменная referrer_id НЕ должна вызываться внутри ветки deepLinkParam');
 });
 
 test('P06', 'deepLinkParam пустой → нет deep_link_router', () => {
@@ -478,6 +485,98 @@ test('R05', 'синтаксис Python OK с fallback', () => {
   const code = gen(p, 'r05');
   const r = checkSyntax(code, 'r05');
   ok(r.ok, `Синтаксическая ошибка с fallback:\n${r.error}`);
+});
+
+// ─── Блок S: Сохранение deep_link_param и referrer_id ────────────────────────
+
+console.log('\n── Блок S: Сохранение deep_link_param и referrer_id ──────────────────');
+
+/**
+ * S01: args = "promo_summer" → deep_link_param сохраняется в user_data
+ */
+test('S01', 'args = "promo_summer" → deep_link_param сохраняется в user_data', () => {
+  const p = makeCleanProject([
+    makeTriggerNode('t1', '/start', 'msg1', {
+      deepLinkParam: 'promo_summer',
+      deepLinkMatchMode: 'exact',
+    }),
+    makeMessageNode('msg1'),
+  ]);
+  const code = gen(p, 's01');
+  ok(code.includes('"deep_link_param"'), 'deep_link_param должен сохраняться в user_data');
+  ok(code.includes('set_user_var(user_id, "deep_link_param"'), 'set_user_var для deep_link_param должен быть в коде');
+});
+
+/**
+ * S02: args = "ref_123456789" → referrer_id = "123456789" сохраняется
+ */
+test('S02', 'args = "ref_123456789" → referrer_id = "123456789" сохраняется', () => {
+  const p = makeCleanProject([
+    makeTriggerNode('t1', '/start', 'msg1', {
+      deepLinkParam: 'ref_',
+      deepLinkMatchMode: 'startsWith',
+    }),
+    makeMessageNode('msg1'),
+  ]);
+  const code = gen(p, 's02');
+  ok(code.includes('args.startswith("ref_")'), 'проверка ref_-префикса должна быть в коде');
+  ok(code.includes('args[4:]'), 'парсинг referrer_id через args[4:] должен быть в коде');
+  ok(code.includes('"referrer_id"'), 'referrer_id должен сохраняться в user_data');
+});
+
+/**
+ * S03: args = "ref_123456789" → deep_link_param = "ref_123456789" тоже сохраняется
+ */
+test('S03', 'args = "ref_123456789" → deep_link_param = "ref_123456789" тоже сохраняется', () => {
+  const p = makeCleanProject([
+    makeTriggerNode('t1', '/start', 'msg1', {
+      deepLinkParam: 'ref_',
+      deepLinkMatchMode: 'startsWith',
+    }),
+    makeMessageNode('msg1'),
+  ]);
+  const code = gen(p, 's03');
+  // Оба поля должны сохраняться
+  ok(code.includes('"deep_link_param"'), 'deep_link_param должен сохраняться');
+  ok(code.includes('"referrer_id"'), 'referrer_id должен сохраняться');
+  // deep_link_param сохраняется до парсинга referrer_id
+  const dlpIdx = code.indexOf('"deep_link_param"');
+  const refIdx = code.indexOf('"referrer_id"');
+  ok(dlpIdx < refIdx, 'deep_link_param должен сохраняться раньше referrer_id');
+});
+
+/**
+ * S04: прямой /start → deep_link_param = "direct"
+ */
+test('S04', 'прямой /start → deep_link_param = "direct"', () => {
+  const p = makeCleanProject([
+    makeTriggerNode('t1', '/start', 'msg1'),
+    makeMessageNode('msg1'),
+  ]);
+  const code = gen(p, 's04');
+  ok(code.includes('"deep_link_param"'), 'deep_link_param должен быть в обработчике /start');
+  ok(code.includes('"direct"'), 'значение "direct" должно быть в коде');
+  // Проверяем что deep_link_param = "direct" сохраняется в start_command_handler
+  ok(
+    code.includes('set_user_var(user_id, "deep_link_param", "direct")'),
+    'set_user_var(user_id, "deep_link_param", "direct") должен быть в start_command_handler'
+  );
+});
+
+/**
+ * S05: синтаксис Python OK
+ */
+test('S05', 'синтаксис Python OK', () => {
+  const p = makeCleanProject([
+    makeTriggerNode('t1', '/start', 'msg1', {
+      deepLinkParam: 'ref_',
+      deepLinkMatchMode: 'startsWith',
+    }),
+    makeMessageNode('msg1'),
+  ]);
+  const code = gen(p, 's05');
+  const r = checkSyntax(code, 's05');
+  ok(r.ok, `Синтаксическая ошибка:\n${r.error}`);
 });
 
 // ─── Итоги ───────────────────────────────────────────────────────────────────

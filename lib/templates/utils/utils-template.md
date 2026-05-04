@@ -34,6 +34,10 @@
 | `{is_premium}` | `from_user.is_premium` | ✅ |
 | `{is_bot}` | `from_user.is_bot` | ✅ |
 
+Поля `is_premium`, `is_bot`, `language_code` из `user_data` передаются в `save_user_to_db`
+через middleware при регистрации пользователя. Поля `deep_link_param` и `referrer_id`
+сохраняются отдельно через `command-trigger` при обработке `/start`.
+
 ## init_user_variables vs init_all_user_vars
 
 | | `init_user_variables` | `init_all_user_vars` |
