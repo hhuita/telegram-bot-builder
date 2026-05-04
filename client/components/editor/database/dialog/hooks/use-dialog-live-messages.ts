@@ -103,6 +103,8 @@ export function useDialogLiveMessages(
     const userIdStr = String(userId);
 
     const unsubscribe = liveContext.subscribe((msg) => {
+      // Обрабатываем только события new-message, new-user игнорируем
+      if (msg.type !== 'new-message') return;
       if (selectedTokenId && msg.tokenId && msg.tokenId !== selectedTokenId) return;
       if (String(msg.data?.userId) !== userIdStr) return;
 
