@@ -111,6 +111,7 @@ export function UserMessagesLiveProvider({ projectId, children }: UserMessagesLi
   const listenersRef = useRef<Set<LiveEventListener>>(new Set());
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const destroyedRef = useRef(false);
 
   useEffect(() => {
@@ -139,10 +140,20 @@ export function UserMessagesLiveProvider({ projectId, children }: UserMessagesLi
 
       ws.onopen = () => {
         console.log(`[LiveProvider] WS подключён, projectId=${projectId}`);
+        // Ping каждые 20 сек чтобы Railway не закрыл idle соединение
+        pingTimerRef.current = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ command: 'ping' }));
+          }
+        }, 20_000);
       };
 
       ws.onclose = () => {
         console.log(`[LiveProvider] WS отключён, projectId=${projectId}, реконнект через 3с`);
+        if (pingTimerRef.current) {
+          clearInterval(pingTimerRef.current);
+          pingTimerRef.current = null;
+        }
         wsRef.current = null;
         if (!destroyedRef.current) {
           reconnectTimerRef.current = setTimeout(connect, 3000);
@@ -157,6 +168,7 @@ export function UserMessagesLiveProvider({ projectId, children }: UserMessagesLi
     return () => {
       destroyedRef.current = true;
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      if (pingTimerRef.current) clearInterval(pingTimerRef.current);
       wsRef.current?.close();
       wsRef.current = null;
     };

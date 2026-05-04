@@ -91,6 +91,18 @@ export function initializeTerminalWebSocket(server: HttpServer): WebSocketServer
       const allKey = userId ? `user_${userId}` : `user_global`;
       registerConnection(allKey, ws);
 
+      // Отвечаем на ping чтобы Railway не закрыл idle соединение
+      ws.on("message", (data) => {
+        try {
+          const parsed = JSON.parse(data.toString());
+          if (parsed.command === 'ping') {
+            ws.send(JSON.stringify({ command: 'pong' }));
+          }
+        } catch {
+          // Игнорируем некорректные сообщения
+        }
+      });
+
       ws.on("close", () => removeConnection(allKey, ws));
       ws.on("error", () => removeConnection(allKey, ws));
       return;
