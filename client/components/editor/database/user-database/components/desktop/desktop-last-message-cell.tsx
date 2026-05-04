@@ -73,7 +73,11 @@ export function DesktopLastMessageCell({ user, projectId }: DesktopLastMessageCe
 
   // Определяем текст: WS-кэш → JOIN-данные → HTTP-данные → заглушка
   const rawText = lastMessage?.messageText ?? userWithMsg.lastMessageText;
-  let messageText = (typeof rawText === 'string' && rawText.trim()) || '';
+  /** Стрипаем HTML-теги для превью — показываем чистый текст без разметки */
+  const strippedText = typeof rawText === 'string'
+    ? rawText.replace(/<[^>]*>/g, '').trim()
+    : '';
+  let messageText = strippedText || '';
 
   if (!messageText && lastMessage?.media && lastMessage.media.length > 0) {
     const mediaTypes = [...new Set(lastMessage.media.map((m: any) => m.fileType ?? m.type ?? 'unknown'))];
