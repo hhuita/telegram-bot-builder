@@ -124,10 +124,53 @@ export async function getAvatarHandler(req: Request, res: Response): Promise<voi
                 );
                 const fileData = await fileResp.json();
                 if (!fileResp.ok || !fileData.result?.file_path) {
-                    res.status(404).json({ message: "Не удалось получить file_path из Telegram" });
-                    return;
+                    // file_id устарел — пробуем получить свежий через getUserProfilePhotos
+                    if (!isBotAvatar) {
+                        try {
+                            const photoResp = await fetchWithProxy(
+                                `https://api.telegram.org/bot${tokenToUse.token}/getUserProfilePhotos`,
+                                { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: userId, limit: 1 }) }
+                            );
+                            const photoData = await photoResp.json();
+                            if (photoResp.ok && photoData.result?.total_count > 0) {
+                                const freshFileId = photoData.result.photos[0].at(-1).file_id;
+                                // Сохраняем свежий file_id в БД
+                                await pool.query(
+                                    'UPDATE bot_users SET avatar_url = $1 WHERE user_id = $2 AND project_id = $3',
+                                    [freshFileId, userId, projectId]
+                                );
+                                // Резолвим URL для текущего запроса
+                                const freshFileResp = await fetchWithProxy(
+                                    `https://api.telegram.org/bot${tokenToUse.token}/getFile`,
+                                    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file_id: freshFileId }) }
+                                );
+                                const freshFileData = await freshFileResp.json();
+                                if (freshFileResp.ok && freshFileData.result?.file_path) {
+                                    fetchUrl = `https://api.telegram.org/file/bot${tokenToUse.token}/${freshFileData.result.file_path}`;
+                                } else {
+                                    res.status(404).json({ message: "Аватарка недоступна" });
+                                    return;
+                                }
+                            } else {
+                                // У пользователя нет аватарки — очищаем устаревший file_id
+                                await pool.query(
+                                    'UPDATE bot_users SET avatar_url = NULL WHERE user_id = $1 AND project_id = $2',
+                                    [userId, projectId]
+                                );
+                                res.status(404).json({ message: "Аватарка не найдена" });
+                                return;
+                            }
+                        } catch {
+                            res.status(404).json({ message: "Не удалось обновить аватарку" });
+                            return;
+                        }
+                    } else {
+                        res.status(404).json({ message: "Не удалось получить file_path из Telegram" });
+                        return;
+                    }
+                } else {
+                    fetchUrl = `https://api.telegram.org/file/bot${tokenToUse.token}/${fileData.result.file_path}`;
                 }
-                fetchUrl = `https://api.telegram.org/file/bot${tokenToUse.token}/${fileData.result.file_path}`;
             } catch (e) {
                 console.warn('[avatar] failed to resolve file_id to URL:', e);
                 res.status(404).json({ message: "Не удалось получить аватарку" });
