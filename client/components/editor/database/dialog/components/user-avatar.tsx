@@ -15,8 +15,22 @@ interface UserAvatarProps {
   user?: UserBotData | null;
   /** ID проекта для прокси */
   projectId?: number;
+  /** ID токена для резолва file_id аватара */
+  tokenId?: number | null;
   /** Размер в пикселях */
   size?: number;
+}
+
+/**
+ * Строит URL аватара с опциональным tokenId
+ * @param projectId - ID проекта
+ * @param userId - ID пользователя
+ * @param tokenId - ID токена (опционально)
+ * @returns URL аватара
+ */
+function buildAvatarUrl(projectId: number, userId: string | number, tokenId?: number | null): string {
+  const base = `/api/projects/${projectId}/users/${userId}/avatar`;
+  return tokenId ? `${base}?tokenId=${tokenId}` : base;
 }
 
 /**
@@ -24,7 +38,7 @@ interface UserAvatarProps {
  * @param props - Свойства компонента
  * @returns JSX элемент
  */
-export function UserAvatar({ messageType, user, projectId, size = 28 }: UserAvatarProps) {
+export function UserAvatar({ messageType, user, projectId, tokenId, size = 28 }: UserAvatarProps) {
   const [imageError, setImageError] = useState(false);
   const isBot = messageType === 'bot';
   const hasPhoto = !!user?.avatarUrl && !!projectId && !!user?.userId && !imageError;
@@ -33,7 +47,7 @@ export function UserAvatar({ messageType, user, projectId, size = 28 }: UserAvat
   if (isBot && hasPhoto && user?.userId) {
     return (
       <img
-        src={`/api/projects/${projectId}/users/${user.userId}/avatar`}
+        src={buildAvatarUrl(projectId!, user.userId, tokenId)}
         alt="Bot avatar"
         style={{ width: size, height: size }}
         className="flex-shrink-0 rounded-full object-cover"
@@ -53,7 +67,7 @@ export function UserAvatar({ messageType, user, projectId, size = 28 }: UserAvat
   if (hasPhoto && user?.userId) {
     return (
       <img
-        src={`/api/projects/${projectId}/users/${user.userId}/avatar`}
+        src={buildAvatarUrl(projectId!, user.userId, tokenId)}
         alt="User avatar"
         style={{ width: size, height: size }}
         className="flex-shrink-0 rounded-full object-cover"
