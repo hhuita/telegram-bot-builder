@@ -20,6 +20,7 @@ type UsersTabContentProps = Pick<
   | 'deleteUserMutation'
   | 'visibleColumns'
   | 'projectId'
+  | 'selectedTokenId'
   | 'onOpenUserDetailsPanel'
   | 'onOpenDialogPanel'
   | 'fetchNextPage'
@@ -41,6 +42,7 @@ export function UsersTabContent(props: UsersTabContentProps): React.JSX.Element 
     deleteUserMutation,
     visibleColumns,
     projectId,
+    selectedTokenId,
     onOpenUserDetailsPanel,
     onOpenDialogPanel,
     fetchNextPage,
@@ -65,6 +67,7 @@ export function UsersTabContent(props: UsersTabContentProps): React.JSX.Element 
             deleteUserMutation={deleteUserMutation}
             visibleColumns={visibleColumns}
             projectId={projectId}
+            tokenId={selectedTokenId}
             onOpenUserDetailsPanel={onOpenUserDetailsPanel}
             onOpenDialogPanel={onOpenDialogPanel}
             fetchNextPage={fetchNextPage}

@@ -25,6 +25,8 @@ interface DesktopTableRowProps {
   visibleColumns?: number;
   /** ID проекта */
   projectId: number;
+  /** ID токена для резолва аватара */
+  tokenId?: number | null;
   /** Открытие панели деталей пользователя */
   onOpenUserDetailsPanel?: (user: UserBotData) => void;
   /** Открытие диалоговой панели */
@@ -37,7 +39,7 @@ interface DesktopTableRowProps {
 const CELL_RENDERERS = [
   {
     key: 'user',
-    render: (props: DesktopTableRowProps) => <DesktopUserCell user={props.user} formatUserName={props.formatUserName} projectId={props.projectId} />,
+    render: (props: DesktopTableRowProps) => <DesktopUserCell user={props.user} formatUserName={props.formatUserName} projectId={props.projectId} tokenId={props.tokenId} />,
     alwaysVisible: true
   },
   {

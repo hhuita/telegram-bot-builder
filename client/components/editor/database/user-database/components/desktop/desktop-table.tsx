@@ -30,6 +30,8 @@ interface DesktopTableProps {
   onOpenUserDetailsPanel?: (user: UserBotData) => void;
   /** Открытие диалоговой панели */
   onOpenDialogPanel?: (user: UserBotData) => void;
+  /** ID токена для резолва аватара */
+  tokenId?: number | null;
   /** Загрузить следующую страницу */
   fetchNextPage?: () => void;
   /** Есть ли следующая страница */
@@ -49,6 +51,7 @@ export function DesktopTable(props: DesktopTableProps): React.JSX.Element {
     searchQuery,
     visibleColumns,
     projectId,
+    tokenId,
     formatUserName,
     deleteUserMutation,
     onOpenUserDetailsPanel,
@@ -93,6 +96,7 @@ export function DesktopTable(props: DesktopTableProps): React.JSX.Element {
                   index={index}
                   visibleColumns={visibleColumns}
                   projectId={projectId}
+                  tokenId={tokenId}
                   formatUserName={formatUserName}
                   deleteUserMutation={deleteUserMutation}
                   onOpenUserDetailsPanel={onOpenUserDetailsPanel}
