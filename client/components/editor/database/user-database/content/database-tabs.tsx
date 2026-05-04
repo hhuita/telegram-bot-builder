@@ -23,6 +23,7 @@ type DatabaseTabsProps = Pick<
   | 'deleteUserMutation'
   | 'visibleColumns'
   | 'projectId'
+  | 'selectedTokenId'
   | 'fetchNextPage'
   | 'hasNextPage'
   | 'isFetchingNextPage'
@@ -51,6 +52,7 @@ export function DatabaseTabs(props: DatabaseTabsProps): React.JSX.Element {
         isMobile={isMobile}
         visibleColumns={visibleColumns}
         projectId={restProps.projectId}
+        selectedTokenId={restProps.selectedTokenId}
         filteredAndSortedUsers={restProps.filteredAndSortedUsers}
         searchQuery={restProps.searchQuery}
         formatUserName={restProps.formatUserName}
