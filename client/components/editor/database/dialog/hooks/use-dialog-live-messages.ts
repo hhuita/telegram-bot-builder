@@ -110,7 +110,18 @@ export function useDialogLiveMessages(
 
       const newMsg = eventToMessage(msg, projectId, selectedTokenId);
       setLiveMessages((prev) => {
+        // Уже есть — пропускаем дубль
         if (prev.some((m) => m.id === newMsg.id)) return prev;
+        // Есть оптимистичное сообщение (отрицательный id) того же типа и текста —
+        // заменяем его реальным, чтобы не показывать дубль
+        const optimisticIndex = prev.findIndex(
+          (m) => m.id < 0 && m.messageType === newMsg.messageType && m.messageText === newMsg.messageText,
+        );
+        if (optimisticIndex !== -1) {
+          const updated = [...prev];
+          updated[optimisticIndex] = newMsg;
+          return updated;
+        }
         return [...prev, newMsg];
       });
     });
@@ -142,7 +153,18 @@ export function useDialogLiveMessages(
 
           const newMsg = eventToMessage(msg, projectId, selectedTokenId);
           setLiveMessages((prev) => {
+            // Уже есть — пропускаем дубль
             if (prev.some((m) => m.id === newMsg.id)) return prev;
+            // Есть оптимистичное сообщение (отрицательный id) того же типа и текста —
+            // заменяем его реальным, чтобы не показывать дубль
+            const optimisticIndex = prev.findIndex(
+              (m) => m.id < 0 && m.messageType === newMsg.messageType && m.messageText === newMsg.messageText,
+            );
+            if (optimisticIndex !== -1) {
+              const updated = [...prev];
+              updated[optimisticIndex] = newMsg;
+              return updated;
+            }
             return [...prev, newMsg];
           });
         } catch {
