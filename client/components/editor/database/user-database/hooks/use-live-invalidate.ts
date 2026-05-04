@@ -180,11 +180,8 @@ export function useLiveInvalidate({ projectId, selectedTokenId }: UseLiveInvalid
     const statsUrl = buildUsersApiUrl(`/api/projects/${projectId}/users/stats`, selectedTokenId);
     const statsKey = [statsUrl, selectedTokenId];
     const normalizedTokenId = selectedTokenId ?? null;
-    /** Таймеры отложенной инвалидации — очищаются при размонтировании */
-    const timers: ReturnType<typeof setTimeout>[] = [];
 
     const unsubscribe = liveContext.subscribe((event: LiveEvent) => {
-      console.log('[LiveInvalidate] получено событие:', event.type, 'projectId:', event.projectId);
       if (event.type === 'new-message') {
         const msg = event as NewMessageLiveEvent;
         const userId = msg.data?.userId;
@@ -205,22 +202,13 @@ export function useLiveInvalidate({ projectId, selectedTokenId }: UseLiveInvalid
           updateUserInCache(queryClient, projectId, normalizedTokenId, userId);
         }
 
-        // Статистику инвалидируем сразу — она не влияет на порядок строк
+        // Redis publish происходит строго после INSERT RETURNING в save_message_to_api,
+        // поэтому данные уже в БД к моменту получения WS-события — задержка не нужна
         queryClient.invalidateQueries({ queryKey: statsKey });
-
-        // Список пользователей инвалидируем с задержкой — даём БД время обновить
-        // lastInteraction, чтобы refetch вернул правильный порядок и не перезаписал
-        // наш optimistic update старыми данными
-        const usersTimer = setTimeout(() => {
-          console.log('[LiveInvalidate] invalidateQueries infinite-users', projectId, normalizedTokenId);
-          const queries = queryClient.getQueryCache().findAll({ queryKey: ['infinite-users', projectId] });
-          console.log('[LiveInvalidate] найдено запросов в кэше:', queries.length, queries.map(q => ({ key: q.queryKey, state: q.state.status })));
-          queryClient.invalidateQueries({
-            queryKey: ['infinite-users', projectId, normalizedTokenId],
-            refetchType: 'all',
-          });
-        }, 1500);
-        timers.push(usersTimer);
+        queryClient.invalidateQueries({
+          queryKey: ['infinite-users', projectId, normalizedTokenId],
+          refetchType: 'all',
+        });
       }
 
       if (event.type === 'new-user') {
@@ -250,9 +238,6 @@ export function useLiveInvalidate({ projectId, selectedTokenId }: UseLiveInvalid
       }
     });
 
-    return () => {
-      unsubscribe();
-      timers.forEach(clearTimeout);
-    };
+    return unsubscribe;
   }, [projectId, selectedTokenId, queryClient, liveContext]);
 }
