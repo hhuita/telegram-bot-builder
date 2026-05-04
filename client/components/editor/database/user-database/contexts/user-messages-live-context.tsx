@@ -128,8 +128,8 @@ export function UserMessagesLiveProvider({ projectId, children }: UserMessagesLi
           const msg = JSON.parse(event.data as string) as LiveEvent;
           // Пропускаем только поддерживаемые типы событий
           if (msg.type !== 'new-message' && msg.type !== 'new-user') return;
-          console.log('[LiveProvider] WS событие:', msg.type, 'projectId:', msg.projectId, 'ожидаем:', projectId, 'слушателей:', listenersRef.current.size);
           if (msg.projectId !== projectId) return;
+          console.log('[LiveProvider] → рассылаем', listenersRef.current.size, 'подписчикам');
           listenersRef.current.forEach((fn) => fn(msg));
         } catch {
           // Игнорируем некорректные сообщения
