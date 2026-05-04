@@ -46,7 +46,6 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useLocation } from 'wouter';
 
 import { DialogPanel } from '@/components/editor/database/dialog/dialog-panel';
-import { UserMessagesLiveProvider } from '@/components/editor/database/user-database/contexts/user-messages-live-context';
 import { GroupsPanel } from '@/components/editor/groups/groups-panel';
 import { UserDatabasePanel } from '@/components/editor/database/user-database/user-database-panel';
 import { UserDetailsPanel } from '@/components/editor/database/user-details/user-details-panel';
@@ -1603,16 +1602,14 @@ export default function Editor() {
             }
             dialogContent={
               selectedDialogUser && activeProject && (
-                <UserMessagesLiveProvider projectId={activeProject.id}>
-                  <DialogPanel
-                    key={`dialog-${selectedDialogUser?.userId || 'none'}`}
-                    projectId={activeProject.id}
-                    selectedTokenId={selectedDatabaseTokenId}
-                    user={selectedDialogUser}
-                    onClose={handleCloseDialogPanel}
-                    onSelectUser={handleSelectDialogUser}
-                  />
-                </UserMessagesLiveProvider>
+                <DialogPanel
+                  key={`dialog-${selectedDialogUser?.userId || 'none'}`}
+                  projectId={activeProject.id}
+                  selectedTokenId={selectedDatabaseTokenId}
+                  user={selectedDialogUser}
+                  onClose={handleCloseDialogPanel}
+                  onSelectUser={handleSelectDialogUser}
+                />
               )
             }
             userDetailsContent={
