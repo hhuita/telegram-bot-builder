@@ -182,6 +182,7 @@ export function useLiveInvalidate({ projectId, selectedTokenId }: UseLiveInvalid
     const normalizedTokenId = selectedTokenId ?? null;
 
     const unsubscribe = liveContext.subscribe((event: LiveEvent) => {
+      console.log('[LiveInvalidate] событие:', event.type, 'projectId:', event.projectId, 'ожидаем:', projectId);
       if (event.type === 'new-message') {
         const msg = event as NewMessageLiveEvent;
         const userId = msg.data?.userId;
