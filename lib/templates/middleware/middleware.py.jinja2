@@ -179,6 +179,9 @@ async def message_logging_middleware(handler, event: types.Message, data: dict):
                 event.from_user.username,
                 event.from_user.first_name,
                 event.from_user.last_name,
+                is_premium=getattr(event.from_user, 'is_premium', None) or False,
+                is_bot=getattr(event.from_user, 'is_bot', None) or False,
+                language_code=getattr(event.from_user, 'language_code', None) or None,
             ))
 {% if saveIncomingMedia %}
         # Если включено сохранение фото — скачиваем и сохраняем в фоне (fire-and-forget)
