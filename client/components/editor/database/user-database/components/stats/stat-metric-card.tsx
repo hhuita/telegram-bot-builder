@@ -58,7 +58,11 @@ export function StatMetricCard(props: StatMetricCardProps): React.JSX.Element {
   const { title, value, subtitle, trend, sparklineData, formatValue } = props;
   const fmt = formatValue ?? defaultFormat;
   const displayValue = value !== undefined ? fmt(value) : '—';
-  const hasSparkline = sparklineData && sparklineData.length > 1;
+  // Если одна точка — дублируем чтобы recharts мог нарисовать линию
+  const chartData = sparklineData && sparklineData.length === 1
+    ? [sparklineData[0], sparklineData[0]]
+    : sparklineData;
+  const hasSparkline = chartData && chartData.length >= 2;
 
   return (
     <div className="bg-background border rounded-xl p-3 flex flex-col gap-2 min-w-0">
@@ -74,7 +78,7 @@ export function StatMetricCard(props: StatMetricCardProps): React.JSX.Element {
         {hasSparkline && (
           <div className="w-20 h-10 flex-shrink-0">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={sparklineData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
+              <AreaChart data={chartData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
                 <defs>
                   <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
