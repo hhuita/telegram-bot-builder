@@ -230,7 +230,13 @@ export function useLiveInvalidate({ projectId, selectedTokenId }: UseLiveInvalid
         // Мгновенно добавляем пользователя в таблицу
         addNewUserToCache(queryClient, projectId, normalizedTokenId, newUserEvent);
 
+        // Инвалидируем stats, growth и traffic — новый пользователь влияет на все три
+        const growthUrl = buildUsersApiUrl(`/api/projects/${projectId}/users/growth`, selectedTokenId);
+        const trafficUrl = buildUsersApiUrl(`/api/projects/${projectId}/users/traffic`, selectedTokenId);
+
         queryClient.invalidateQueries({ queryKey: statsKey });
+        queryClient.invalidateQueries({ queryKey: [growthUrl, selectedTokenId] });
+        queryClient.invalidateQueries({ queryKey: [trafficUrl, selectedTokenId] });
         queryClient.invalidateQueries({
           queryKey: ['infinite-users', projectId],
           refetchType: 'all',
