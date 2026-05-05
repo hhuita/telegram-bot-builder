@@ -44,11 +44,11 @@ export function DatabaseContent(props: DatabaseContentProps): React.JSX.Element 
               selectedTokenId={restProps.selectedTokenId}
               onSourceClick={restProps.onSourceClick}
             />
-            <SaveMediaToggle
+            {/* <SaveMediaToggle
               projectId={restProps.projectId}
               tokenId={restProps.selectedTokenId}
               saveIncomingMedia={saveIncomingMedia ?? null}
-            />
+            /> */}
             <DatabaseFiltersSection {...restProps} />
             <DatabaseTabs 
               {...restProps} 
