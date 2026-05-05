@@ -34,6 +34,17 @@ function formatAvg(v: number): string {
 }
 
 /**
+ * Вычисляет процент от общего числа пользователей
+ * @param count - Количество пользователей в группе
+ * @param total - Общее количество пользователей
+ * @returns Процент от 0 до 100, или 0 если total равен нулю
+ */
+function calcPercent(count: number, total: number): number {
+  if (total === 0) return 0;
+  return Math.round((count / total) * 100);
+}
+
+/**
  * Главный дашборд статистики: числовые карточки + бары источников и языков
  * @param props - Пропсы компонента
  * @returns JSX элемент дашборда
@@ -46,6 +57,12 @@ export function StatsDashboard(props: StatsDashboardProps): React.JSX.Element {
 
   // Определяем тренд по недельному приросту
   const growthTrend = weeklyGrowth > 0 ? 'up' : weeklyGrowth < 0 ? 'down' : 'neutral';
+
+  // Вычисляем проценты статусов пользователей от общего числа
+  const total = stats.totalUsers ?? 0;
+  const activePercent = calcPercent(stats.activeUsers ?? 0, total);
+  const blockedPercent = calcPercent(stats.blockedUsers ?? 0, total);
+  const premiumPercent = calcPercent(stats.premiumUsers ?? 0, total);
 
   // Преобразуем источники трафика в формат StatBarItem
   const sourceItems = sources.map(s => ({
@@ -61,8 +78,16 @@ export function StatsDashboard(props: StatsDashboardProps): React.JSX.Element {
     percentage: l.percentage,
   }));
 
+  // Формируем подпись для карточки активности
+  const activitySubtitle = [
+    stats.avgInteractionsPerUser !== undefined
+      ? `${formatAvg(stats.avgInteractionsPerUser)} / юзер`
+      : null,
+    stats.usersWithResponses ? `${stats.usersWithResponses} с ответами` : null,
+  ].filter(Boolean).join(' · ') || undefined;
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 p-3 grid-cols-1-mobile">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3">
       {/* Карточка: всего пользователей со sparkline */}
       <StatMetricCard
         title="Всего пользователей"
@@ -72,34 +97,36 @@ export function StatsDashboard(props: StatsDashboardProps): React.JSX.Element {
         subtitle={weeklyGrowth > 0 ? `+${weeklyGrowth} за неделю` : undefined}
       />
 
-      {/* Карточка: активность */}
+      {/* Карточка: статус пользователей (активные, заблокированные, premium) */}
+      <StatBarCard
+        title="Статус"
+        items={[
+          { label: 'Активны', count: stats.activeUsers ?? 0, percentage: activePercent },
+          { label: 'Заблок.', count: stats.blockedUsers ?? 0, percentage: blockedPercent },
+          { label: 'Premium', count: stats.premiumUsers ?? 0, percentage: premiumPercent },
+        ]}
+      />
+
+      {/* Карточка: активность с подписью среднего и числа ответивших */}
       <StatMetricCard
         title="Активность"
         value={stats.totalInteractions}
-        subtitle={
-          stats.avgInteractionsPerUser !== undefined
-            ? `${formatAvg(stats.avgInteractionsPerUser)} / юзер`
-            : undefined
-        }
+        subtitle={activitySubtitle}
         trend="neutral"
       />
 
-      {/* Карточка: источники трафика (только если есть данные) */}
-      {sourceItems.length > 0 && (
-        <StatBarCard
-          title="Источники трафика"
-          items={sourceItems}
-          onItemClick={onSourceClick}
-        />
-      )}
+      {/* Карточка: источники трафика — StatBarCard сам скрывается при пустом массиве */}
+      <StatBarCard
+        title="Источники трафика"
+        items={sourceItems}
+        onItemClick={onSourceClick}
+      />
 
-      {/* Карточка: языки (только если есть данные) */}
-      {languageItems.length > 0 && (
-        <StatBarCard
-          title="Языки"
-          items={languageItems}
-        />
-      )}
+      {/* Карточка: языки — StatBarCard сам скрывается при пустом массиве */}
+      <StatBarCard
+        title="Языки"
+        items={languageItems}
+      />
     </div>
   );
 }
