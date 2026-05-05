@@ -57,8 +57,8 @@ function TrendIcon({ trend }: { trend?: 'up' | 'down' | 'neutral' }) {
 function Sparkline({ data }: { data: Array<{ count: number }> }) {
   if (!data || data.length < 2) return null;
 
-  const width = 80;
-  const height = 32;
+  const width = 120;
+  const height = 48;
   const max = Math.max(...data.map(d => d.count), 1);
   const min = Math.min(...data.map(d => d.count));
   const range = max - min || 1;
@@ -76,7 +76,7 @@ function Sparkline({ data }: { data: Array<{ count: number }> }) {
   }).join(' L')} L${width},${height} Z`;
 
   return (
-    <svg width={width} height={height} className="flex-shrink-0 opacity-80">
+    <svg width={width} height={height} className="flex-shrink-0 opacity-90">
       <defs>
         <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="currentColor" stopOpacity="0.3" />
