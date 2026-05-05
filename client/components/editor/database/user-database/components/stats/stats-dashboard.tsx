@@ -99,16 +99,6 @@ export function StatsDashboard(props: StatsDashboardProps): React.JSX.Element {
         subtitle={weeklyGrowth > 0 ? `+${weeklyGrowth} за неделю` : undefined}
       />
 
-      {/* Карточка: статус пользователей (активные, заблокированные, premium) */}
-      <StatBarCard
-        title="Статус"
-        items={[
-          { label: 'Активны', count: stats.activeUsers ?? 0, percentage: activePercent },
-          { label: 'Заблок.', count: stats.blockedUsers ?? 0, percentage: blockedPercent },
-          { label: 'Premium', count: stats.premiumUsers ?? 0, percentage: premiumPercent },
-        ]}
-      />
-
       {/* Карточка: активность с подписью среднего и числа ответивших */}
       <StatMetricCard
         title="Активность"
@@ -118,6 +108,16 @@ export function StatsDashboard(props: StatsDashboardProps): React.JSX.Element {
         trend={weeklyMessages > 0 ? 'up' : 'neutral'}
         gradientId="msgActivity"
         lineColor="#10b981"
+      />
+
+      {/* Карточка: статус пользователей (активные, заблокированные, premium) */}
+      <StatBarCard
+        title="Статус"
+        items={[
+          { label: 'Активны', count: stats.activeUsers ?? 0, percentage: activePercent },
+          { label: 'Заблок.', count: stats.blockedUsers ?? 0, percentage: blockedPercent },
+          { label: 'Premium', count: stats.premiumUsers ?? 0, percentage: premiumPercent },
+        ]}
       />
 
       {/* Карточка: источники трафика — StatBarCard сам скрывается при пустом массиве */}
