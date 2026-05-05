@@ -36,6 +36,14 @@ export const botUsers = pgTable("bot_users", {
   userData: jsonb("user_data").default({}),
   /** Флаг активности: 0 - неактивен, 1 - активен */
   isActive: integer("is_active").default(1),
+  /** Флаг Premium пользователя: 0 - обычный, 1 - premium */
+  isPremium: integer("is_premium").default(0),
+  /** Код языка пользователя (IETF: ru, en, uk...) */
+  languageCode: text("language_code"),
+  /** Параметр deep link при первом визите */
+  deepLinkParam: text("deep_link_param"),
+  /** ID пользователя-реферера */
+  referrerId: text("referrer_id"),
 }, (table) => ({
   pk: primaryKey({ columns: [table.userId, table.projectId, table.tokenId] }),
 }));
@@ -60,6 +68,14 @@ export const insertBotUserSchema = z.object({
   userData: z.record(z.any()).default({}),
   /** Флаг активности: 0 - неактивен, 1 - активен */
   isActive: z.number().min(0).max(1).default(1),
+  /** Флаг Premium пользователя: 0 - обычный, 1 - premium */
+  isPremium: z.number().min(0).max(1).default(0).optional(),
+  /** Код языка пользователя (IETF: ru, en, uk...) */
+  languageCode: z.string().nullable().optional(),
+  /** Параметр deep link при первом визите */
+  deepLinkParam: z.string().nullable().optional(),
+  /** ID пользователя-реферера */
+  referrerId: z.string().nullable().optional(),
 });
 
 /** Тип записи пользователя бота */

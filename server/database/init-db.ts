@@ -342,11 +342,17 @@ export async function initializeDatabaseTables() {
         username TEXT,
         first_name TEXT,
         last_name TEXT,
+        avatar_url TEXT,
+        is_bot INTEGER DEFAULT 0,
         registered_at TIMESTAMP DEFAULT NOW(),
         last_interaction TIMESTAMP DEFAULT NOW(),
         interaction_count INTEGER DEFAULT 0,
         user_data JSONB DEFAULT '{}',
         is_active INTEGER DEFAULT 1,
+        is_premium INTEGER DEFAULT 0,
+        language_code TEXT,
+        deep_link_param TEXT,
+        referrer_id TEXT,
         PRIMARY KEY (user_id, project_id, token_id)
       );
     `, "Создание таблицы bot_users");
@@ -670,6 +676,30 @@ export async function initializeDatabaseTables() {
       }
     } catch (error) {
       console.log('⚠️ Ошибка при проверке/добавлении колонки telegram_file_id в media_files:', error);
+    }
+
+    // Миграция: добавление полей трекинга в bot_users (Этап 2A)
+    try {
+      await executeWithRetry(db, sql`
+        ALTER TABLE bot_users ADD COLUMN IF NOT EXISTS is_premium INTEGER DEFAULT 0;
+      `, "Миграция: добавление is_premium в bot_users");
+      await executeWithRetry(db, sql`
+        ALTER TABLE bot_users ADD COLUMN IF NOT EXISTS language_code TEXT;
+      `, "Миграция: добавление language_code в bot_users");
+      await executeWithRetry(db, sql`
+        ALTER TABLE bot_users ADD COLUMN IF NOT EXISTS deep_link_param TEXT;
+      `, "Миграция: добавление deep_link_param в bot_users");
+      await executeWithRetry(db, sql`
+        ALTER TABLE bot_users ADD COLUMN IF NOT EXISTS referrer_id TEXT;
+      `, "Миграция: добавление referrer_id в bot_users");
+      await executeWithRetry(db, sql`
+        ALTER TABLE bot_users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+      `, "Миграция: добавление avatar_url в bot_users");
+      await executeWithRetry(db, sql`
+        ALTER TABLE bot_users ADD COLUMN IF NOT EXISTS is_bot INTEGER DEFAULT 0;
+      `, "Миграция: добавление is_bot в bot_users");
+    } catch (error) {
+      console.log('⚠️ Ошибка при миграции полей трекинга в bot_users:', error);
     }
 
     console.log('✅ Таблицы базы данных успешно инициализированы!');

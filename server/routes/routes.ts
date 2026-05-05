@@ -2206,9 +2206,12 @@ export async function registerRoutes(app: Express, httpServer?: Server): Promise
         u.last_interaction AS "lastInteraction",
         COALESCE(u.interaction_count, 0)::integer AS "interactionCount",
         CASE WHEN u.is_active = 1 THEN TRUE ELSE FALSE END AS "isActive",
-        FALSE AS "isPremium",
+        CASE WHEN u.is_premium = 1 THEN TRUE ELSE FALSE END AS "isPremium",
         FALSE AS "isBlocked",
         CASE WHEN u.is_bot = 1 THEN TRUE ELSE FALSE END AS "isBot",
+        u.language_code AS "languageCode",
+        u.deep_link_param AS "deepLinkParam",
+        u.referrer_id AS "referrerId",
         lm.message_text AS "lastMessageText",
         lm.created_at AS "lastMessageAt"
       FROM bot_users u
@@ -2306,13 +2309,16 @@ export async function registerRoutes(app: Express, httpServer?: Server): Promise
           COUNT(*) as "totalUsers",
           COUNT(*) FILTER (WHERE is_active = 1) as "activeUsers",
           COUNT(*) FILTER (WHERE is_active = 0) as "blockedUsers",
-          0 as "premiumUsers",
+          COUNT(*) FILTER (WHERE is_premium = 1) as "premiumUsers",
           COUNT(*) FILTER (WHERE user_data IS NOT NULL AND user_data != '{}') as "usersWithResponses",
           COALESCE(SUM(interaction_count), 0) as "totalInteractions",
           CASE WHEN COUNT(*) > 0
             THEN COALESCE(SUM(interaction_count)::float / COUNT(*), 0)
             ELSE 0
-          END as "avgInteractionsPerUser"
+          END as "avgInteractionsPerUser",
+          COUNT(DISTINCT language_code) FILTER (WHERE language_code IS NOT NULL) as "uniqueLanguages",
+          COUNT(*) FILTER (WHERE deep_link_param IS NOT NULL AND deep_link_param != 'direct') as "deepLinkUsers",
+          COUNT(*) FILTER (WHERE referrer_id IS NOT NULL) as "referralUsers"
         FROM bot_users
         WHERE project_id = $1
           AND ($2::integer IS NULL OR token_id = $2)
@@ -2356,6 +2362,66 @@ export async function registerRoutes(app: Express, httpServer?: Server): Promise
       } catch (fallbackError) {
         res.status(500).json({ message: "Failed to fetch user stats" });
       }
+    }
+  });
+
+  /**
+   * Эндпоинт для получения данных трафика: источники и языки пользователей
+   * @route GET /api/projects/:id/users/traffic
+   * @param id - Идентификатор проекта
+   * @returns Объект с массивами sources и languages
+   */
+  app.get("/api/projects/:id/users/traffic", async (req, res) => {
+    const projectId = parseInt(req.params.id);
+    const tokenId = getRequestTokenId(req);
+
+    // Проверяем права доступа к проекту для авторизованных пользователей
+    const ownerId = getOwnerIdFromRequest(req);
+    if (ownerId !== null) {
+      const hasAccess = await storage.hasProjectAccess(projectId, ownerId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Нет прав доступа к проекту" });
+      }
+    }
+
+    try {
+      // Запрос источников трафика по deep_link_param
+      const sourcesResult = await dbPool.query(`
+        SELECT
+          COALESCE(deep_link_param, 'unknown') as param,
+          COUNT(*) as count,
+          ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 1) as percentage
+        FROM bot_users
+        WHERE project_id = $1
+          AND ($2::integer IS NULL OR token_id = $2)
+          AND deep_link_param IS NOT NULL
+        GROUP BY deep_link_param
+        ORDER BY count DESC
+        LIMIT 20
+      `, [projectId, tokenId]);
+
+      // Запрос распределения по языкам
+      const languagesResult = await dbPool.query(`
+        SELECT
+          COALESCE(language_code, 'unknown') as code,
+          COUNT(*) as count,
+          ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 1) as percentage
+        FROM bot_users
+        WHERE project_id = $1
+          AND ($2::integer IS NULL OR token_id = $2)
+          AND language_code IS NOT NULL
+        GROUP BY language_code
+        ORDER BY count DESC
+        LIMIT 20
+      `, [projectId, tokenId]);
+
+      res.json({
+        sources: sourcesResult.rows,
+        languages: languagesResult.rows,
+      });
+    } catch (error) {
+      console.error("Error fetching traffic data:", error);
+      res.status(500).json({ message: "Ошибка при получении данных трафика" });
     }
   });
 
