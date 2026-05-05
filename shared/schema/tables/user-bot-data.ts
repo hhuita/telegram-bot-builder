@@ -32,6 +32,10 @@ export const userBotData = pgTable("user_bot_data", {
   isBot: integer("is_bot").default(0),
   /** Флаг premium */
   isPremium: integer("is_premium").default(0),
+  /** Параметр deep link при первом визите */
+  deepLinkParam: text("deep_link_param"),
+  /** ID пользователя-реферера */
+  referrerId: text("referrer_id"),
   /** Время последнего взаимодействия */
   lastInteraction: timestamp("last_interaction").defaultNow(),
   /** Количество взаимодействий */
@@ -92,6 +96,10 @@ export const insertUserBotDataSchema = z.object({
   isBot: z.number().min(0).max(1).default(0),
   /** Флаг premium */
   isPremium: z.number().min(0).max(1).default(0),
+  /** Параметр deep link при первом визите */
+  deepLinkParam: z.string().nullable().optional(),
+  /** ID пользователя-реферера */
+  referrerId: z.string().nullable().optional(),
   /** Время последнего взаимодействия */
   lastInteraction: z.date().optional(),
   /** Количество взаимодействий */

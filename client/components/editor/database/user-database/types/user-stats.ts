@@ -1,4 +1,8 @@
 /**
+ * @fileoverview Тип статистики пользователей бота
+ */
+
+/**
  * Статистика пользователей бота
  */
 export interface UserStats {
@@ -22,4 +26,13 @@ export interface UserStats {
 
   /** Количество пользователей, предоставивших ответы на вопросы бота */
   usersWithResponses?: number;
+
+  /** Количество уникальных языков пользователей */
+  uniqueLanguages?: number;
+
+  /** Количество пользователей пришедших по deep link (не direct) */
+  deepLinkUsers?: number;
+
+  /** Количество пользователей пришедших по реферальной ссылке */
+  referralUsers?: number;
 }
