@@ -72,9 +72,9 @@ export function StatBarCard(props: StatBarCardProps): React.JSX.Element | null {
             </div>
 
             {/* Бар */}
-            <div className="h-1.5 w-full rounded-full bg-primary/10 overflow-hidden">
+            <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
               <div
-                className="h-full rounded-full bg-primary/50 transition-all duration-300"
+                className="h-full rounded-full bg-primary transition-all duration-300"
                 style={{ width: `${Math.min(item.percentage, 100)}%` }}
               />
             </div>
