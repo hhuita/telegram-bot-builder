@@ -375,3 +375,136 @@ bot:payment:{pid}:{tid}      ⏳ план  — платёж
 bot:ratelimit:{pid}:{tid}    ⏳ план  — rate limit
 bot:memory:{pid}:{tid}       ⏳ план  — высокое потребление памяти
 ```
+
+---
+
+## Полная карта Telegram Update типов vs наши триггеры
+
+### Все типы Update из Telegram Bot API (aiogram 3.7)
+
+| Update тип | Что это | Триггер в редакторе | Redis событие |
+|-----------|---------|---------------------|---------------|
+| `message` | Входящее сообщение | ✅ `command_trigger`, `text_trigger`, `incoming_message_trigger` | ✅ `bot:message` |
+| `edited_message` | Отредактированное сообщение | ❌ нет | ❌ нет |
+| `channel_post` | Пост в канале | ❌ нет | ❌ нет |
+| `edited_channel_post` | Отредактированный пост | ❌ нет | ❌ нет |
+| `business_connection` | Подключение бизнес-аккаунта | ❌ нет | ❌ нет |
+| `business_message` | Сообщение от бизнес-аккаунта | ❌ нет | ❌ нет |
+| `edited_business_message` | Редактирование бизнес-сообщения | ❌ нет | ❌ нет |
+| `deleted_business_messages` | Удаление бизнес-сообщений | ❌ нет | ❌ нет |
+| `message_reaction` | Реакция на сообщение | ❌ нет | ❌ нет |
+| `message_reaction_count` | Счётчик реакций | ❌ нет | ❌ нет |
+| `inline_query` | Inline запрос | ❌ нет | ❌ нет |
+| `chosen_inline_result` | Выбранный inline результат | ❌ нет | ❌ нет |
+| `callback_query` | Нажатие inline кнопки | ✅ `callback_trigger`, `incoming_callback_trigger` | ✅ `bot:message` (как кнопка) |
+| `shipping_query` | Запрос доставки (платежи) | ❌ нет | ❌ нет |
+| `pre_checkout_query` | Предоплата (платежи) | ❌ нет | ❌ нет |
+| `poll` | Изменение опроса | ❌ нет | ❌ нет |
+| `poll_answer` | Ответ на опрос | ❌ нет | ❌ нет |
+| `my_chat_member` | Изменение статуса бота в чате | ✅ частично (managed_bot) | ❌ нет |
+| `chat_member` | Изменение статуса участника | ❌ нет | ❌ нет |
+| `chat_join_request` | Запрос на вступление | ❌ нет | ❌ нет |
+| `chat_boost` | Буст чата | ❌ нет | ❌ нет |
+| `removed_chat_boost` | Удаление буста | ❌ нет | ❌ нет |
+
+---
+
+### Что стоит добавить в редактор (новые триггеры)
+
+#### 🔥 High Priority
+
+**`message_reaction` — реакция на сообщение**
+Пользователь поставил 👍 или ❤️ на сообщение бота.
+Можно использовать как триггер: "если поставил реакцию → выполнить сценарий".
+```
+Триггер: reaction_trigger
+Условие: emoji == "👍" или любая реакция
+```
+
+**`poll_answer` — ответ на опрос**
+Пользователь проголосовал в опросе который отправил бот.
+Очень полезно для квизов и голосований.
+```
+Триггер: poll_answer_trigger
+Переменная: poll_answer = "Вариант A"
+```
+
+**`chat_member` — изменение участника группы**
+Пользователь вступил или вышел из группы.
+Нужен для автоматической выдачи ролей, приветствий новых участников.
+```
+Триггер: chat_member_trigger
+Условие: new_status == "member" (вступил) или "left" (вышел)
+```
+
+**`chat_join_request` — запрос на вступление**
+Пользователь хочет вступить в закрытую группу/канал.
+Можно автоматически одобрять или отклонять по условиям.
+```
+Триггер: join_request_trigger
+Действие: approve / decline
+```
+
+---
+
+#### 🟡 Medium Priority
+
+**`edited_message` — редактирование сообщения**
+Пользователь отредактировал своё сообщение.
+Полезно для ботов где важна актуальность данных.
+
+**`channel_post` — пост в канале**
+Новый пост опубликован в канале где бот является администратором.
+Можно автоматически обрабатывать посты: форматировать, пересылать, сохранять.
+
+**`inline_query` — inline режим**
+Пользователь вводит `@botname запрос` в любом чате.
+Бот может отвечать результатами без открытия диалога.
+
+---
+
+#### 🟢 Low Priority
+
+**`message_reaction_count` — счётчик реакций на посты канала**
+Агрегированная статистика реакций (без имён пользователей).
+
+**`chat_boost` / `removed_chat_boost` — буст канала**
+Пользователь забустил канал Premium-подпиской.
+Можно давать бонусы за буст.
+
+**`shipping_query` / `pre_checkout_query` — платежи**
+Обработка платежей через Telegram Payments.
+Нужен отдельный узел `payment_node`.
+
+---
+
+### Новые Redis события для новых триггеров
+
+```
+bot:reaction:{pid}:{tid}      ← message_reaction (реакция на сообщение)
+bot:poll_answer:{pid}:{tid}   ← poll_answer (ответ на опрос)
+bot:join_request:{pid}:{tid}  ← chat_join_request (запрос на вступление)
+bot:chat_member:{pid}:{tid}   ← chat_member (изменение участника)
+bot:channel_post:{pid}:{tid}  ← channel_post (пост в канале)
+bot:payment:{pid}:{tid}       ← pre_checkout_query (платёж)
+```
+
+---
+
+### Текущие триггеры в редакторе (полный список)
+
+Из папок `lib/templates/`:
+
+| Шаблон | Тип триггера | Update тип |
+|--------|-------------|-----------|
+| `command-trigger` | Команда `/start`, `/help` и т.д. | `message` |
+| `text-trigger` | Текстовое совпадение | `message` |
+| `callback-trigger` | Нажатие inline кнопки | `callback_query` |
+| `incoming-callback-trigger` | Любой callback | `callback_query` |
+| `incoming-message-trigger` | Любое сообщение | `message` |
+| `group-message-trigger` | Сообщение в группе | `message` (group) |
+| `outgoing-message-trigger` | Исходящее сообщение | внутренний |
+| `managed-bot-updated-trigger` | Обновление управляемого бота | `my_chat_member` |
+| `animation-handler` | Анимация/GIF | `message` (animation) |
+| `voice` | Голосовое сообщение | `message` (voice) |
+| `media-input-handlers` | Медиафайлы | `message` (photo/video/doc) |
