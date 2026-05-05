@@ -2454,7 +2454,8 @@ export async function registerRoutes(app: Express, httpServer?: Server): Promise
     const interval = intervalMap[period] ?? "30 days";
 
     try {
-      const result = await dbPool.query(`
+      // Сначала пробуем за выбранный период
+      let result = await dbPool.query(`
         SELECT
           DATE(registered_at) as date,
           COUNT(*) as count
@@ -2465,6 +2466,21 @@ export async function registerRoutes(app: Express, httpServer?: Server): Promise
         GROUP BY DATE(registered_at)
         ORDER BY date ASC
       `, [projectId, tokenId]);
+
+      // Если данных нет — берём весь доступный диапазон (до 90 дней)
+      if (result.rows.length === 0) {
+        result = await dbPool.query(`
+          SELECT
+            DATE(registered_at) as date,
+            COUNT(*) as count
+          FROM bot_users
+          WHERE project_id = $1
+            AND ($2::integer IS NULL OR token_id = $2)
+            AND registered_at >= NOW() - INTERVAL '90 days'
+          GROUP BY DATE(registered_at)
+          ORDER BY date ASC
+        `, [projectId, tokenId]);
+      }
 
       res.json(result.rows.map(row => ({
         date: row.date instanceof Date
