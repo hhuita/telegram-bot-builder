@@ -8,6 +8,7 @@ export * from './use-users';
 export * from './use-infinite-users';
 export * from './use-stats';
 export * from './use-traffic';
+export * from './use-growth';
 export * from './use-search-users';
 export * from './use-dialog-messages';
 export * from './use-user-details-messages';

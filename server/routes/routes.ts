@@ -2425,6 +2425,59 @@ export async function registerRoutes(app: Express, httpServer?: Server): Promise
     }
   });
 
+  /**
+   * Эндпоинт для получения данных прироста пользователей по дням
+   * @route GET /api/projects/:id/users/growth
+   * @param id - Идентификатор проекта
+   * @query period - Период: "7d" | "30d" | "90d", по умолчанию "30d"
+   * @returns Массив объектов [{date, count}]
+   */
+  app.get("/api/projects/:id/users/growth", async (req, res) => {
+    const projectId = parseInt(req.params.id);
+    const tokenId = getRequestTokenId(req);
+    const period = (req.query.period as string) || "30d";
+
+    const ownerId = getOwnerIdFromRequest(req);
+    if (ownerId !== null) {
+      const hasAccess = await storage.hasProjectAccess(projectId, ownerId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Нет прав доступа к проекту" });
+      }
+    }
+
+    // Определяем интервал по параметру period
+    const intervalMap: Record<string, string> = {
+      "7d": "7 days",
+      "30d": "30 days",
+      "90d": "90 days",
+    };
+    const interval = intervalMap[period] ?? "30 days";
+
+    try {
+      const result = await dbPool.query(`
+        SELECT
+          DATE(registered_at) as date,
+          COUNT(*) as count
+        FROM bot_users
+        WHERE project_id = $1
+          AND ($2::integer IS NULL OR token_id = $2)
+          AND registered_at >= NOW() - INTERVAL '${interval}'
+        GROUP BY DATE(registered_at)
+        ORDER BY date ASC
+      `, [projectId, tokenId]);
+
+      res.json(result.rows.map(row => ({
+        date: row.date instanceof Date
+          ? row.date.toISOString().split('T')[0]
+          : String(row.date),
+        count: Number(row.count),
+      })));
+    } catch (error) {
+      console.error("Error fetching growth data:", error);
+      res.status(500).json({ message: "Ошибка при получении данных прироста" });
+    }
+  });
+
   // Get detailed user responses for a project
   app.get("/api/projects/:id/responses", async (req, res) => {
     try {

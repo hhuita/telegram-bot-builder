@@ -1,10 +1,10 @@
 /**
- * @fileoverview Компонент секции статистики с трафиком
- * @description Отображает карточки статистики и секцию трафика/языков
+ * @fileoverview Компонент секции статистики с дашбордом
+ * @description Отображает StatsDashboard если есть projectId, иначе fallback на StatsCards
  */
 
 import React from 'react';
-import { StatsCards, TrafficSection } from '../components/stats';
+import { StatsCards, StatsDashboard } from '../components/stats';
 import { UserStats } from '../types';
 
 /**
@@ -29,21 +29,19 @@ interface DatabaseStatsSectionProps {
 export function DatabaseStatsSection(props: DatabaseStatsSectionProps): React.JSX.Element | null {
   const { stats, projectId, selectedTokenId, onSourceClick } = props;
 
-  if (!stats) {
-    return null;
+  if (!stats) return null;
+
+  // Без projectId используем старые карточки как fallback
+  if (!projectId) {
+    return <StatsCards stats={stats} />;
   }
 
   return (
-    <>
-      <StatsCards stats={stats} />
-      {projectId != null && (
-        <TrafficSection
-          projectId={projectId}
-          selectedTokenId={selectedTokenId}
-          stats={stats}
-          onSourceClick={onSourceClick}
-        />
-      )}
-    </>
+    <StatsDashboard
+      stats={stats}
+      projectId={projectId}
+      selectedTokenId={selectedTokenId}
+      onSourceClick={onSourceClick}
+    />
   );
 }

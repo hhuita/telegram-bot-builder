@@ -9,3 +9,6 @@ export * from './tablet-stat-card';
 export * from './desktop-stat-card';
 export * from './stat-card-types';
 export * from './traffic-section';
+export * from './stat-metric-card';
+export * from './stat-bar-card';
+export * from './stats-dashboard';
