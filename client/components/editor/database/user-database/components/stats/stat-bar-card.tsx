@@ -34,23 +34,26 @@ export interface StatBarCardProps {
 /**
  * Карточка с горизонтальными барами для отображения распределения
  * @param props - Пропсы компонента
- * @returns JSX элемент карточки или null если нет данных
+ * @returns JSX элемент карточки
  */
-export function StatBarCard(props: StatBarCardProps): React.JSX.Element | null {
+export function StatBarCard(props: StatBarCardProps): React.JSX.Element {
   const { title, items, maxItems = 5, onItemClick } = props;
 
-  if (!items || items.length === 0) return null;
-
-  const visible = items.slice(0, maxItems);
+  const visible = (items ?? []).slice(0, maxItems);
+  const isEmpty = visible.length === 0;
 
   return (
     <div className="bg-background border rounded-xl p-3 flex flex-col gap-2 min-w-0">
       {/* Заголовок */}
       <p className="text-xs font-medium text-muted-foreground">{title}</p>
 
-      {/* Список элементов с барами */}
-      <div className="flex flex-col gap-1.5">
-        {visible.map((item) => (
+      {isEmpty ? (
+        /* Пустое состояние */
+        <p className="text-xs text-muted-foreground/50 italic">Нет данных</p>
+      ) : (
+        /* Список элементов с барами */
+        <div className="flex flex-col gap-1.5">
+          {visible.map((item) => (
           <div
             key={item.label}
             className={`flex flex-col gap-0.5 ${onItemClick ? 'cursor-pointer' : ''}`}
@@ -79,8 +82,9 @@ export function StatBarCard(props: StatBarCardProps): React.JSX.Element | null {
               />
             </div>
           </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
