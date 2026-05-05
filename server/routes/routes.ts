@@ -2494,6 +2494,74 @@ export async function registerRoutes(app: Express, httpServer?: Server): Promise
     }
   });
 
+  /**
+   * Эндпоинт активности сообщений по дням
+   * @route GET /api/projects/:id/messages/activity
+   * @param id - Идентификатор проекта
+   * @query period - Период: "7d" | "30d" | "90d", по умолчанию "30d"
+   * @returns Массив объектов [{date, count}] — количество сообщений за каждый день
+   */
+  app.get("/api/projects/:id/messages/activity", async (req, res) => {
+    const projectId = parseInt(req.params.id);
+    const tokenId = getRequestTokenId(req);
+    const period = (req.query.period as string) || "30d";
+
+    const ownerId = getOwnerIdFromRequest(req);
+    if (ownerId !== null) {
+      const hasAccess = await storage.hasProjectAccess(projectId, ownerId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Нет прав доступа к проекту" });
+      }
+    }
+
+    const intervalMap: Record<string, string> = {
+      "7d": "7 days",
+      "30d": "30 days",
+      "90d": "90 days",
+    };
+    const interval = intervalMap[period] ?? "30 days";
+
+    try {
+      // Сначала пробуем за выбранный период
+      let result = await dbPool.query(`
+        SELECT
+          DATE(created_at) as date,
+          COUNT(*) as count
+        FROM bot_messages
+        WHERE project_id = $1
+          AND ($2::integer IS NULL OR token_id = $2)
+          AND created_at >= NOW() - INTERVAL '${interval}'
+        GROUP BY DATE(created_at)
+        ORDER BY date ASC
+      `, [projectId, tokenId]);
+
+      // Если данных нет — берём за 90 дней (fallback)
+      if (result.rows.length === 0) {
+        result = await dbPool.query(`
+          SELECT
+            DATE(created_at) as date,
+            COUNT(*) as count
+          FROM bot_messages
+          WHERE project_id = $1
+            AND ($2::integer IS NULL OR token_id = $2)
+            AND created_at >= NOW() - INTERVAL '90 days'
+          GROUP BY DATE(created_at)
+          ORDER BY date ASC
+        `, [projectId, tokenId]);
+      }
+
+      res.json(result.rows.map(row => ({
+        date: row.date instanceof Date
+          ? row.date.toISOString().split('T')[0]
+          : String(row.date),
+        count: Number(row.count),
+      })));
+    } catch (error) {
+      console.error("Error fetching messages activity:", error);
+      res.status(500).json({ message: "Ошибка при получении данных активности сообщений" });
+    }
+  });
+
   // Get detailed user responses for a project
   app.get("/api/projects/:id/responses", async (req, res) => {
     try {

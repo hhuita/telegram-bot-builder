@@ -42,6 +42,8 @@ export interface SparklineChartProps {
   data: GrowthPoint[];
   /** Уникальный суффикс для id градиента */
   gradientId: string;
+  /** Цвет линии и градиента (по умолчанию #3b82f6 — синий) */
+  lineColor?: string;
 }
 
 /**
@@ -82,7 +84,7 @@ function calcY(count: number, max: number): number {
  * @param props - Свойства компонента
  * @returns SVG-график или null если данных недостаточно
  */
-export function SparklineChart({ data, gradientId }: SparklineChartProps): React.JSX.Element | null {
+export function SparklineChart({ data, gradientId, lineColor = '#3b82f6' }: SparklineChartProps): React.JSX.Element | null {
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
 
   if (!data || data.length < 2) return null;
@@ -133,8 +135,8 @@ export function SparklineChart({ data, gradientId }: SparklineChartProps): React
       >
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+            <stop offset="0%" stopColor={lineColor} stopOpacity="0.3" />
+            <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
           </linearGradient>
         </defs>
 
@@ -146,11 +148,11 @@ export function SparklineChart({ data, gradientId }: SparklineChartProps): React
         {/* Заливка под линией */}
         <path d={fillPath} fill={`url(#${gradientId})`} />
 
-        {/* Линия графика — явный синий цвет для надёжного отображения */}
+        {/* Линия графика — цвет задаётся через проп lineColor */}
         <polyline
           points={linePoints}
           fill="none"
-          stroke="#3b82f6"
+          stroke={lineColor}
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"

@@ -7,6 +7,7 @@ import React from 'react';
 import { UserStats } from '../../types';
 import { useGrowth } from '../../hooks/queries/use-growth';
 import { useTraffic } from '../../hooks/queries/use-traffic';
+import { useMessagesActivity } from '../../hooks/queries/use-messages-activity';
 import { StatMetricCard } from './stat-metric-card';
 import { StatBarCard } from './stat-bar-card';
 
@@ -54,6 +55,7 @@ export function StatsDashboard(props: StatsDashboardProps): React.JSX.Element {
 
   const { points, weeklyGrowth } = useGrowth({ projectId, selectedTokenId });
   const { sources, languages } = useTraffic({ projectId, selectedTokenId });
+  const { points: messagePoints, weeklyMessages } = useMessagesActivity({ projectId, selectedTokenId });
 
   // Определяем тренд по недельному приросту
   const growthTrend = weeklyGrowth > 0 ? 'up' : weeklyGrowth < 0 ? 'down' : 'neutral';
@@ -111,8 +113,11 @@ export function StatsDashboard(props: StatsDashboardProps): React.JSX.Element {
       <StatMetricCard
         title="Активность"
         value={stats.totalInteractions}
+        sparklineData={messagePoints}
         subtitle={activitySubtitle}
-        trend="neutral"
+        trend={weeklyMessages > 0 ? 'up' : 'neutral'}
+        gradientId="msgActivity"
+        lineColor="#10b981"
       />
 
       {/* Карточка: источники трафика — StatBarCard сам скрывается при пустом массиве */}

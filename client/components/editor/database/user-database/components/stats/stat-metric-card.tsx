@@ -24,6 +24,10 @@ export interface StatMetricCardProps {
   sparklineData?: GrowthPoint[];
   /** Функция форматирования значения */
   formatValue?: (v: number) => string;
+  /** Уникальный id градиента для sparkline (переопределяет авто-генерацию) */
+  gradientId?: string;
+  /** Цвет линии sparkline (по умолчанию синий #3b82f6) */
+  lineColor?: string;
 }
 
 /**
@@ -55,12 +59,12 @@ function TrendIcon({ trend }: { trend?: 'up' | 'down' | 'neutral' }) {
  * @returns JSX элемент карточки
  */
 export function StatMetricCard(props: StatMetricCardProps): React.JSX.Element {
-  const { title, value, subtitle, trend, sparklineData, formatValue } = props;
+  const { title, value, subtitle, trend, sparklineData, formatValue, gradientId: gradientIdProp, lineColor } = props;
   const fmt = formatValue ?? defaultFormat;
   const displayValue = value !== undefined ? fmt(value) : '—';
 
-  /** Уникальный id градиента на основе заголовка */
-  const gradientId = `sparkGrad-${title.replace(/\s+/g, '')}`;
+  /** Уникальный id градиента: из пропса или авто-генерация из заголовка */
+  const gradientId = gradientIdProp ?? `sparkGrad-${title.replace(/\s+/g, '')}`;
   const hasChart = !!sparklineData && sparklineData.length >= 2;
 
   return (
@@ -83,7 +87,7 @@ export function StatMetricCard(props: StatMetricCardProps): React.JSX.Element {
 
       {/* График на всю ширину карточки */}
       {hasChart && (
-        <SparklineChart data={sparklineData!} gradientId={gradientId} />
+        <SparklineChart data={sparklineData!} gradientId={gradientId} lineColor={lineColor} />
       )}
     </div>
   );

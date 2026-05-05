@@ -209,6 +209,13 @@ export function useLiveInvalidate({ projectId, selectedTokenId }: UseLiveInvalid
           queryKey: ['infinite-users', projectId],
           refetchType: 'all',
         });
+
+        // Инвалидируем кэш активности сообщений — новое сообщение влияет на график
+        const messagesActivityUrl = buildUsersApiUrl(
+          `/api/projects/${projectId}/messages/activity`,
+          selectedTokenId,
+        );
+        queryClient.invalidateQueries({ queryKey: [messagesActivityUrl, selectedTokenId] });
       }
 
       if (event.type === 'new-user') {
