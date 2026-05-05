@@ -23,11 +23,17 @@ const GW = VW - PL - 4;
 const GH = VH - PB - PT;
 
 /**
- * Форматирует дату в короткий вид "25 апр."
- * @param dateStr - Строка даты "YYYY-MM-DD"
+ * Форматирует дату или datetime в короткий вид.
+ * Если строка содержит время (ISO с T) — показывает "14:32", иначе "25 апр."
+ * @param dateStr - Строка даты "YYYY-MM-DD" или ISO datetime
  * @returns Отформатированная строка
  */
 function fmtDate(dateStr: string): string {
+  if (dateStr.includes('T')) {
+    // ISO datetime — показываем время
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+  }
   return new Date(dateStr).toLocaleDateString('ru', {
     day: 'numeric',
     month: 'short',
