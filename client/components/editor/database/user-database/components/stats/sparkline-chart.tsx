@@ -65,12 +65,13 @@ export function SparklineChart({ data, gradientId }: SparklineChartProps): React
   if (!data || data.length < 2) return null;
 
   const max = Math.max(...data.map(d => d.count), 1);
-  const range = max || 1;
+  // Логарифмическое масштабирование — сглаживает пики и делает малые значения видимыми
+  const logScale = (v: number) => v > 0 ? Math.log1p(v) / Math.log1p(max) : 0;
 
   /** Вычисляет X-координату точки в viewBox */
   const px = (i: number) => PAD_LEFT + (i / (data.length - 1)) * GW;
   /** Вычисляет Y-координату точки в viewBox */
-  const py = (count: number) => 4 + GH - (count / range) * GH;
+  const py = (count: number) => 4 + GH - logScale(count) * GH;
 
   const linePoints = data.map((d, i) => `${px(i)},${py(d.count)}`).join(' ');
 
@@ -102,7 +103,7 @@ export function SparklineChart({ data, gradientId }: SparklineChartProps): React
     <div className="relative w-full">
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        preserveAspectRatio="none"
+        preserveAspectRatio="xMidYMid meet"
         className="w-full"
         style={{ height: '64px' }}
         onMouseMove={handleMouseMove}
@@ -128,7 +129,7 @@ export function SparklineChart({ data, gradientId }: SparklineChartProps): React
           points={linePoints}
           fill="none"
           stroke="hsl(var(--primary))"
-          strokeWidth="1.5"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
