@@ -64,14 +64,19 @@ export function StatBarCard(props: StatBarCardProps): React.JSX.Element {
               ? (e) => e.key === 'Enter' && onItemClick(item.label)
               : undefined}
           >
-            {/* Метка и процент */}
+            {/* Метка, количество и процент */}
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs text-foreground truncate max-w-[70%]">
+              <span className="text-xs text-foreground truncate max-w-[60%]">
                 {item.label}
               </span>
-              <span className="text-xs text-muted-foreground tabular-nums flex-shrink-0">
-                {item.percentage}%
-              </span>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {item.count}
+                </span>
+                <span className="text-xs text-muted-foreground/60 tabular-nums">
+                  {item.percentage}%
+                </span>
+              </div>
             </div>
 
             {/* Бар */}
