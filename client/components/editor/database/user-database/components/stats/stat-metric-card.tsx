@@ -1,12 +1,12 @@
 /**
- * @fileoverview Числовая карточка статистики со sparkline-графиком
- * @description Отображает числовое значение, дельту и мини-график прироста.
- *              Sparkline реализован через нативный SVG без зависимостей.
+ * @fileoverview Числовая карточка статистики с Railway-стилем sparkline
+ * @description Отображает заголовок, большое число, subtitle и график на всю ширину.
  */
 
 import React from 'react';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { GrowthPoint } from '../../hooks/queries/use-growth';
+import { SparklineChart } from './sparkline-chart';
 
 /**
  * Пропсы компонента StatMetricCard
@@ -16,7 +16,7 @@ export interface StatMetricCardProps {
   title: string;
   /** Числовое значение для отображения */
   value: number | undefined;
-  /** Подпись под значением, например "+5 за неделю" */
+  /** Подпись рядом с заголовком, например "+8 за неделю" */
   subtitle?: string;
   /** Направление тренда */
   trend?: 'up' | 'down' | 'neutral';
@@ -27,7 +27,7 @@ export interface StatMetricCardProps {
 }
 
 /**
- * Форматирует число для компактного отображения
+ * Форматирует число компактно: 1.2K, 3.4M и т.д.
  * @param v - Числовое значение
  * @returns Отформатированная строка
  */
@@ -40,7 +40,7 @@ function defaultFormat(v: number): string {
 
 /**
  * Иконка тренда по направлению
- * @param trend - Направление тренда
+ * @param props - Пропсы с направлением тренда
  * @returns JSX иконка
  */
 function TrendIcon({ trend }: { trend?: 'up' | 'down' | 'neutral' }) {
@@ -50,55 +50,7 @@ function TrendIcon({ trend }: { trend?: 'up' | 'down' | 'neutral' }) {
 }
 
 /**
- * SVG sparkline без внешних зависимостей
- * @param data - Массив точек прироста
- * @returns SVG элемент или null если данных недостаточно
- */
-function Sparkline({ data }: { data: Array<{ count: number }> }) {
-  if (!data || data.length < 2) return null;
-
-  const width = 120;
-  const height = 48;
-  const max = Math.max(...data.map(d => d.count), 1);
-  const min = Math.min(...data.map(d => d.count));
-  const range = max - min || 1;
-
-  const points = data.map((d, i) => {
-    const x = (i / (data.length - 1)) * width;
-    const y = height - ((d.count - min) / range) * (height - 4) - 2;
-    return `${x},${y}`;
-  }).join(' ');
-
-  // Путь для заливки под линией
-  const fillPath = `M0,${height} L${points.split(' ').map(p => {
-    const [x, y] = p.split(',');
-    return `${x},${y}`;
-  }).join(' L')} L${width},${height} Z`;
-
-  return (
-    <svg width={width} height={height} className="flex-shrink-0 opacity-90">
-      <defs>
-        <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="currentColor" stopOpacity="0.3" />
-          <stop offset="100%" stopColor="currentColor" stopOpacity="0.05" />
-        </linearGradient>
-      </defs>
-      <path d={fillPath} fill="url(#sg)" className="text-primary" />
-      <polyline
-        points={points}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-primary"
-      />
-    </svg>
-  );
-}
-
-/**
- * Числовая карточка статистики со sparkline и дельтой
+ * Числовая карточка статистики с Railway-стилем sparkline
  * @param props - Пропсы компонента
  * @returns JSX элемент карточки
  */
@@ -107,27 +59,31 @@ export function StatMetricCard(props: StatMetricCardProps): React.JSX.Element {
   const fmt = formatValue ?? defaultFormat;
   const displayValue = value !== undefined ? fmt(value) : '—';
 
-  return (
-    <div className="bg-background border rounded-xl p-3 flex flex-col gap-2 min-w-0">
-      {/* Заголовок */}
-      <p className="text-xs font-medium text-muted-foreground truncate">{title}</p>
+  /** Уникальный id градиента на основе заголовка */
+  const gradientId = `sparkGrad-${title.replace(/\s+/g, '')}`;
+  const hasChart = !!sparklineData && sparklineData.length >= 2;
 
-      {/* Значение и sparkline */}
-      <div className="flex items-end justify-between gap-2">
-        <span className="text-2xl font-bold text-foreground tabular-nums leading-none">
-          {displayValue}
-        </span>
-        {sparklineData && sparklineData.length >= 2 && (
-          <Sparkline data={sparklineData} />
+  return (
+    <div className="bg-background border rounded-xl p-3 flex flex-col gap-2 min-w-0 overflow-hidden">
+      {/* Строка заголовка с subtitle справа */}
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-medium text-muted-foreground truncate">{title}</p>
+        {subtitle && (
+          <div className="flex items-center gap-1 shrink-0">
+            <TrendIcon trend={trend} />
+            <span className="text-xs text-muted-foreground whitespace-nowrap">{subtitle}</span>
+          </div>
         )}
       </div>
 
-      {/* Подпись с трендом */}
-      {subtitle && (
-        <div className="flex items-center gap-1">
-          <TrendIcon trend={trend} />
-          <span className="text-xs text-muted-foreground">{subtitle}</span>
-        </div>
+      {/* Большое числовое значение */}
+      <span className="text-2xl font-bold text-foreground tabular-nums leading-none">
+        {displayValue}
+      </span>
+
+      {/* График на всю ширину карточки */}
+      {hasChart && (
+        <SparklineChart data={sparklineData!} gradientId={gradientId} />
       )}
     </div>
   );
