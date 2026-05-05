@@ -8,3 +8,4 @@ export * from './mobile-stat-card';
 export * from './tablet-stat-card';
 export * from './desktop-stat-card';
 export * from './stat-card-types';
+export * from './traffic-section';

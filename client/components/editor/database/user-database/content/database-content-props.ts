@@ -38,7 +38,15 @@ export interface DatabaseContentProps {
     totalInteractions?: number;
     avgInteractionsPerUser?: number;
     usersWithResponses?: number;
+    /** Количество уникальных языков пользователей */
+    uniqueLanguages?: number;
+    /** Количество пользователей пришедших по deep link */
+    deepLinkUsers?: number;
+    /** Количество пользователей пришедших по реферальной ссылке */
+    referralUsers?: number;
   };
+  /** Обработчик клика по источнику трафика для фильтрации таблицы */
+  onSourceClick?: (source: string) => void;
   /** Поисковый запрос */
   searchQuery: string;
   /** Функция изменения поискового запроса */
