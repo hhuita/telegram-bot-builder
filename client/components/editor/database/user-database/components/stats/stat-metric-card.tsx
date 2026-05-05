@@ -28,6 +28,8 @@ export interface StatMetricCardProps {
   gradientId?: string;
   /** Цвет линии sparkline (по умолчанию синий #3b82f6) */
   lineColor?: string;
+  /** Дополнительный элемент под заголовком (например переключатель периода) */
+  headerExtra?: React.ReactNode;
 }
 
 /**
@@ -59,7 +61,7 @@ function TrendIcon({ trend }: { trend?: 'up' | 'down' | 'neutral' }) {
  * @returns JSX элемент карточки
  */
 export function StatMetricCard(props: StatMetricCardProps): React.JSX.Element {
-  const { title, value, subtitle, trend, sparklineData, formatValue, gradientId: gradientIdProp, lineColor } = props;
+  const { title, value, subtitle, trend, sparklineData, formatValue, gradientId: gradientIdProp, lineColor, headerExtra } = props;
   const fmt = formatValue ?? defaultFormat;
   const displayValue = value !== undefined ? fmt(value) : '—';
 
@@ -79,6 +81,11 @@ export function StatMetricCard(props: StatMetricCardProps): React.JSX.Element {
           </div>
         )}
       </div>
+
+      {/* Дополнительный элемент под заголовком (например переключатель периода) */}
+      {headerExtra && (
+        <div>{headerExtra}</div>
+      )}
 
       {/* Большое числовое значение */}
       <span className="text-2xl font-bold text-foreground tabular-nums leading-none">

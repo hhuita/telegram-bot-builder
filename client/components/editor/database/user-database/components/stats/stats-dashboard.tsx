@@ -3,13 +3,14 @@
  * @description Сетка из числовых карточек и карточек с барами
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { UserStats } from '../../types';
 import { useGrowth } from '../../hooks/queries/use-growth';
 import { useTraffic } from '../../hooks/queries/use-traffic';
-import { useMessagesActivity } from '../../hooks/queries/use-messages-activity';
+import { useMessagesActivity, Granularity } from '../../hooks/queries/use-messages-activity';
 import { StatMetricCard } from './stat-metric-card';
 import { StatBarCard } from './stat-bar-card';
+import { ActivityGranularitySelector } from './activity-granularity-selector';
 
 /**
  * Пропсы компонента StatsDashboard
@@ -53,9 +54,16 @@ function calcPercent(count: number, total: number): number {
 export function StatsDashboard(props: StatsDashboardProps): React.JSX.Element {
   const { stats, projectId, selectedTokenId, onSourceClick } = props;
 
+  /** Текущая гранулярность графика активности сообщений */
+  const [msgGranularity, setMsgGranularity] = useState<Granularity>('1d');
+
   const { points, weeklyGrowth } = useGrowth({ projectId, selectedTokenId });
   const { sources, languages } = useTraffic({ projectId, selectedTokenId });
-  const { points: messagePoints, weeklyMessages } = useMessagesActivity({ projectId, selectedTokenId });
+  const { points: messagePoints, weeklyMessages } = useMessagesActivity({
+    projectId,
+    selectedTokenId,
+    granularity: msgGranularity,
+  });
 
   // Определяем тренд по недельному приросту
   const growthTrend = weeklyGrowth > 0 ? 'up' : weeklyGrowth < 0 ? 'down' : 'neutral';
@@ -108,6 +116,12 @@ export function StatsDashboard(props: StatsDashboardProps): React.JSX.Element {
         trend={weeklyMessages > 0 ? 'up' : 'neutral'}
         gradientId="msgActivity"
         lineColor="#10b981"
+        headerExtra={
+          <ActivityGranularitySelector
+            value={msgGranularity}
+            onChange={setMsgGranularity}
+          />
+        }
       />
 
       {/* Карточка: статус пользователей (активные, заблокированные, premium) */}
