@@ -1,10 +1,10 @@
 /**
  * @fileoverview Числовая карточка статистики со sparkline-графиком
- * @description Отображает числовое значение, дельту и мини-график прироста
+ * @description Отображает числовое значение, дельту и мини-график прироста.
+ *              Sparkline реализован через нативный SVG без зависимостей.
  */
 
 import React from 'react';
-import { ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { GrowthPoint } from '../../hooks/queries/use-growth';
 
@@ -50,6 +50,54 @@ function TrendIcon({ trend }: { trend?: 'up' | 'down' | 'neutral' }) {
 }
 
 /**
+ * SVG sparkline без внешних зависимостей
+ * @param data - Массив точек прироста
+ * @returns SVG элемент или null если данных недостаточно
+ */
+function Sparkline({ data }: { data: Array<{ count: number }> }) {
+  if (!data || data.length < 2) return null;
+
+  const width = 80;
+  const height = 32;
+  const max = Math.max(...data.map(d => d.count), 1);
+  const min = Math.min(...data.map(d => d.count));
+  const range = max - min || 1;
+
+  const points = data.map((d, i) => {
+    const x = (i / (data.length - 1)) * width;
+    const y = height - ((d.count - min) / range) * (height - 4) - 2;
+    return `${x},${y}`;
+  }).join(' ');
+
+  // Путь для заливки под линией
+  const fillPath = `M0,${height} L${points.split(' ').map(p => {
+    const [x, y] = p.split(',');
+    return `${x},${y}`;
+  }).join(' L')} L${width},${height} Z`;
+
+  return (
+    <svg width={width} height={height} className="flex-shrink-0 opacity-80">
+      <defs>
+        <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.05" />
+        </linearGradient>
+      </defs>
+      <path d={fillPath} fill="url(#sg)" className="text-primary" />
+      <polyline
+        points={points}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="text-primary"
+      />
+    </svg>
+  );
+}
+
+/**
  * Числовая карточка статистики со sparkline и дельтой
  * @param props - Пропсы компонента
  * @returns JSX элемент карточки
@@ -58,11 +106,6 @@ export function StatMetricCard(props: StatMetricCardProps): React.JSX.Element {
   const { title, value, subtitle, trend, sparklineData, formatValue } = props;
   const fmt = formatValue ?? defaultFormat;
   const displayValue = value !== undefined ? fmt(value) : '—';
-  // Если одна точка — дублируем чтобы recharts мог нарисовать линию
-  const chartData = sparklineData && sparklineData.length === 1
-    ? [sparklineData[0], sparklineData[0]]
-    : sparklineData;
-  const hasSparkline = chartData && chartData.length >= 2;
 
   return (
     <div className="bg-background border rounded-xl p-3 flex flex-col gap-2 min-w-0">
@@ -74,30 +117,8 @@ export function StatMetricCard(props: StatMetricCardProps): React.JSX.Element {
         <span className="text-2xl font-bold text-foreground tabular-nums leading-none">
           {displayValue}
         </span>
-
-        {hasSparkline && (
-          <div className="w-24 h-12 flex-shrink-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 4, right: 2, bottom: 4, left: 2 }}>
-                <defs>
-                  <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
-                  </linearGradient>
-                </defs>
-                <Area
-                  type="monotone"
-                  dataKey="count"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  fill="url(#sparkGrad)"
-                  dot={false}
-                  isAnimationActive={false}
-                  baseValue={0}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+        {sparklineData && sparklineData.length >= 2 && (
+          <Sparkline data={sparklineData} />
         )}
       </div>
 
