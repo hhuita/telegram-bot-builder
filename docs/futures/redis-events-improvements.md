@@ -176,3 +176,202 @@ lib/templates/utils/utils.py.jinja2                     ← bot:variable:changed
 client/components/editor/database/user-database/contexts/user-messages-live-context.tsx
 client/components/editor/database/user-database/hooks/use-live-invalidate.ts
 ```
+
+---
+
+## Дополнительные события (расширенный roadmap)
+
+### 🔥 Аналитика поведения (Priority: High — основа для воронок)
+
+#### `bot:node:visited` — посещение узла
+
+Публиковать каждый раз когда пользователь попадает в узел сценария.
+Основа для построения воронок и карты популярных узлов без отдельной таблицы `bot_events`.
+
+```python
+await _redis_client.publish(
+    f"bot:node:{PROJECT_ID}:{TOKEN_ID}",
+    json.dumps({
+        "type": "node-visited",
+        "userId": str(user_id),
+        "tokenId": TOKEN_ID,
+        "nodeId": node_id,
+        "nodeType": node_type,   # "message" | "condition" | "input" | ...
+        "timestamp": datetime.utcnow().isoformat(),
+    })
+)
+```
+
+**Где публиковать:** в `handle-node-function` шаблоне при входе в каждый узел.
+
+**Что даёт:**
+- Топ посещаемых узлов
+- Воронка: сколько дошли от узла A до узла B
+- Где пользователи "застревают" и выходят
+
+---
+
+#### `bot:button:clicked` — нажатие кнопки
+
+Сейчас нажатие кнопки пишется в `bot_messages` как текст `[Нажата кнопка: X]`.
+Нужно отдельное событие с структурированными данными.
+
+```python
+await _redis_client.publish(
+    f"bot:button:{PROJECT_ID}:{TOKEN_ID}",
+    json.dumps({
+        "type": "button-clicked",
+        "userId": str(user_id),
+        "tokenId": TOKEN_ID,
+        "buttonText": button_text,
+        "callbackData": callback_data,
+        "nodeId": node_id,
+        "timestamp": datetime.utcnow().isoformat(),
+    })
+)
+```
+
+**Где публиковать:** в `callback_query_logging_middleware`.
+
+**Что даёт:**
+- Какие кнопки нажимают чаще всего
+- A/B тест: какая формулировка кнопки работает лучше
+- Тепловая карта кнопок по узлам
+
+---
+
+#### `bot:command:used` — использование команды
+
+```python
+await _redis_client.publish(
+    f"bot:command:{PROJECT_ID}:{TOKEN_ID}",
+    json.dumps({
+        "type": "command-used",
+        "userId": str(user_id),
+        "tokenId": TOKEN_ID,
+        "command": "/help",   # или "/start", "/menu" и т.д.
+        "timestamp": datetime.utcnow().isoformat(),
+    })
+)
+```
+
+**Где публиковать:** в `command-trigger` шаблоне.
+
+---
+
+### 👤 Состояние пользователя (Priority: Medium)
+
+#### `bot:user:blocked` / `bot:user:unblocked`
+
+Telegram шлёт `my_chat_member` update когда пользователь блокирует бота.
+Можно поймать и обновить `is_active = 0` в БД + опубликовать событие.
+
+```python
+# В обработчике my_chat_member
+if new_status == "kicked":
+    await _redis_client.publish(f"bot:user:blocked:{PROJECT_ID}:{TOKEN_ID}", ...)
+elif new_status == "member":
+    await _redis_client.publish(f"bot:user:unblocked:{PROJECT_ID}:{TOKEN_ID}", ...)
+```
+
+**Что даёт:** реальный счётчик заблокированных без ручного обновления.
+
+---
+
+#### `bot:user:state:changed` — смена FSM состояния
+
+Полезно для отладки — видеть в реальном времени в каком состоянии находится пользователь.
+
+```python
+await _redis_client.publish(
+    f"bot:state:{PROJECT_ID}:{TOKEN_ID}",
+    json.dumps({
+        "type": "state-changed",
+        "userId": str(user_id),
+        "tokenId": TOKEN_ID,
+        "oldState": old_state,
+        "newState": new_state,
+    })
+)
+```
+
+---
+
+### 💳 Платежи (Priority: Low — только если используются Telegram Payments)
+
+#### `bot:payment:received`
+
+```python
+# В обработчике successful_payment
+await _redis_client.publish(
+    f"bot:payment:{PROJECT_ID}:{TOKEN_ID}",
+    json.dumps({
+        "type": "payment-received",
+        "userId": str(user_id),
+        "tokenId": TOKEN_ID,
+        "amount": payment.total_amount,
+        "currency": payment.currency,
+        "payload": payment.invoice_payload,
+        "timestamp": datetime.utcnow().isoformat(),
+    })
+)
+```
+
+---
+
+### ⚙️ Системные (Priority: Low)
+
+#### `bot:rate:limited` — 429 от Telegram
+
+```python
+# В error handler при получении TelegramRetryAfter
+await _redis_client.publish(
+    f"bot:ratelimit:{PROJECT_ID}:{TOKEN_ID}",
+    json.dumps({
+        "type": "rate-limited",
+        "retryAfter": retry_after,
+        "timestamp": datetime.utcnow().isoformat(),
+    })
+)
+```
+
+**Что даёт:** алерт в UI когда бот начинает флудить.
+
+---
+
+#### `bot:memory:high` — предупреждение о памяти
+
+```python
+# В cleanup_user_data() если len(user_data) > порога
+if len(user_data) > 10_000:
+    await _redis_client.publish(
+        f"bot:memory:{PROJECT_ID}:{TOKEN_ID}",
+        json.dumps({
+            "type": "memory-high",
+            "userDataSize": len(user_data),
+            "threshold": 10_000,
+        })
+    )
+```
+
+---
+
+## Итоговая карта всех событий
+
+```
+bot:message:{pid}:{tid}     ✅ есть   — каждое сообщение
+bot:user:{pid}:{tid}        ✅ есть   — новый пользователь
+bot:logs:{pid}:{tid}        ✅ есть   — логи бота
+bot:started:{pid}:{tid}     ✅ есть   — запуск бота
+bot:stopped:{pid}:{tid}     ✅ есть   — остановка бота
+
+bot:user:updated:{pid}:{tid} ⏳ план  — изменение данных пользователя
+bot:node:{pid}:{tid}         ⏳ план  — посещение узла (воронки!)
+bot:button:{pid}:{tid}       ⏳ план  — нажатие кнопки
+bot:command:{pid}:{tid}      ⏳ план  — использование команды
+bot:user:blocked:{pid}:{tid} ⏳ план  — блокировка бота пользователем
+bot:state:{pid}:{tid}        ⏳ план  — смена FSM состояния
+bot:payment:{pid}:{tid}      ⏳ план  — платёж
+bot:ratelimit:{pid}:{tid}    ⏳ план  — rate limit
+bot:memory:{pid}:{tid}       ⏳ план  — высокое потребление памяти
+```
